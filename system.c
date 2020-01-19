@@ -57,6 +57,8 @@ void Configuration(void)
     IEC3bits.CCP1IE = 1;
     IEC6bits.CCT1IE = 1;
     INTCON2bits.GIE = 1;
+    
+    TRISA = 0;
         
 }
 
