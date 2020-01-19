@@ -154,16 +154,3 @@ void __attribute__((__interrupt__,no_auto_psv)) _CCP1Interrupt(void)
     IFS3bits.CCP1IF = 0;
 }
 
-void __attribute__((__interrupt__,no_auto_psv)) _CCT1Interrupt(void)
-{
-    //LATAbits.LATA1 ^= 1 ;
-    //__asm__ ("mov #0,W1\nmov W1,LATA\nmov #1,W1\nmov W1,LATA\nmov #0,W1\nmov W1,LATA");
-    //__asm__ ("mov LATA,W1\nxor w1,#2,w0\nmov w0,LATA\nxor w0,#2,w1\nmov w1,LATA");
-    __asm__("btg LATA,#1\nbtg LATA,#1");
-    /*__asm__("mov #0xa5a5,w0\n" +
-            "bfins w0,LATA\n" +
-            "rlc w0,LATA\n" +
-            "rlc w0,LATA\n" +
-            "rlc w0,LATA");*/
-    IFS6bits.CCT1IF = 0;
-}
