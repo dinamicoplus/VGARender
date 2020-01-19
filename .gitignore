@@ -1,0 +1,8 @@
+build
+debug
+dist
+.DS_Store
+.cvsignore
+*.swp
+*.o
+*.a
