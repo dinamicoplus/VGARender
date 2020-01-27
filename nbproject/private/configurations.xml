@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configurationDescriptor version="65">
   <projectmakefile>Makefile</projectmakefile>
-  <defaultConf>0</defaultConf>
+  <defaultConf>1</defaultConf>
   <confs>
     <conf name="PIC24FJ256GA705_SIM" type="2">
       <platformToolSN></platformToolSN>
@@ -22,7 +22,7 @@
       </runprofile>
     </conf>
     <conf name="PIC24FJ256GA705_TARGET" type="2">
-      <platformToolSN></platformToolSN>
+      <platformToolSN>:=MPLABComm-USB-Microchip:=&lt;vid>04D8:=&lt;pid>8107:=&lt;rev>0002:=&lt;man>Microchip Technology Incorporated:=&lt;prod>PIC24FJ256GA7 Curiosity Development Board:=&lt;sn>BUR172818714:=&lt;drv>x:=&lt;xpt>h:=end</platformToolSN>
       <languageToolchainDir>C:\Program Files (x86)\Microchip\xc16\v1.41\bin</languageToolchainDir>
       <mdbdebugger version="1">
         <placeholder1>place holder 1</placeholder1>
