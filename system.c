@@ -28,12 +28,38 @@ switching using the compiler's __builtin_write_OSCCON functions.
 Refer to the C Compiler for PIC24 MCUs and dsPIC DSCs User Guide in the
 compiler installation directory /doc folder for documentation on the
 __builtin functions. */
+#define BITS2WORD(sfrBitfield) ( *((unsigned int*) &sfrBitfield) )
+// Convert a bitfield to a word (unsigned int).
+#define BITS2BYTEL(sfrBitfield) ( ((unsigned char*) &sfrBitfield)[0] )
+// Return the low byte (as a unsigned char) of a bitfield.
+#define BITS2BYTEH(sfrBitfield) ( ((unsigned char*) &sfrBitfield)[1] )
+// Return the high byte (as a unsigned char) of a bitfield.
 
 
 void Configuration(void)
 {
-    OSCCONbits.NOSC = 0b001;
-    CLKDIVbits.RCDIV = 0b000;
+    unsigned int pllCounter;
+    OSCCONBITS OSCCONbitsCopy;
+    
+    OSCCONbitsCopy = OSCCONbits;
+    
+    CLKDIVbits.CPDIV = 3;
+    CLKDIVbits.PLLEN = 1;
+    // Wait for the PLL to stabalise
+    for (pllCounter = 0; pllCounter < 600; pllCounter++);
+    
+    OSCCONbitsCopy.NOSC = 1;
+    OSCCONbitsCopy.OSWEN = 1;
+    
+    __builtin_write_OSCCONH( BITS2BYTEH( OSCCONbitsCopy ) );
+    __builtin_write_OSCCONL( BITS2BYTEL( OSCCONbitsCopy ) );
+
+    while (OSCCONbits.COSC != OSCCONbits.NOSC);
+    
+    CLKDIVbits.RCDIV0 = 0;
+    CLKDIVbits.CPDIV = 0;
+    CLKDIVbits.PLLEN = 1;
+    
     CCP1CON1Lbits.CCSEL = 0;      // Set MCCP operating mode (OC mode)
     CCP1CON1Lbits.MOD = 0b0100;   // Set mode (Buffered Dual-Compare/PWM mode)
 
