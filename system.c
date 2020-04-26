@@ -38,6 +38,7 @@ __builtin functions. */
 
 void Configuration(void)
 {
+    //Oscillator configuration
     unsigned int pllCounter;
     OSCCONBITS OSCCONbitsCopy;
     
@@ -60,6 +61,7 @@ void Configuration(void)
     CLKDIVbits.CPDIV = 0;
     CLKDIVbits.PLLEN = 1;
     
+    //Configure MCCP
     CCP1CON1Lbits.CCSEL = 0;      // Set MCCP operating mode (OC mode)
     CCP1CON1Lbits.MOD = 0b0100;   // Set mode (Buffered Dual-Compare/PWM mode)
 
@@ -76,9 +78,9 @@ void Configuration(void)
     CCP1CON3Hbits.OUTM = 0b000;   // Set advanced output modes (Standard output)
     CCP1CON3Hbits.POLACE = 1;     //Configure output polarity (Active High)
     CCP1TMRL = 0x0000;            //Initialize timer prior to enable module.
-    CCP1PRL = 0x03F8;             //Configure timebase period
+    CCP1PRL = 0x01FD; //0x007F;             //Configure timebase period
     CCP1RA = 0x0002;              // Set the rising edge compare value
-    CCP1RB = 0x007F;//0x007A;              // Set the falling edge compare value
+    CCP1RB = 0x003F;              // Set the falling edge compare value
     CCP1CON1Lbits.CCPON = 1;      // Turn on MCCP module
     
     IEC3bits.CCP1IE = 1;

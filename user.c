@@ -27,11 +27,22 @@
 /* <Initialize variables in user.h and insert code for user algorithms.> */
 
 /* TODO Initialize User Ports/Peripherals/Project here */
-
+unsigned int j=0;
 void InitApp(void)
 {
-    /* Setup analog functionality and port direction */
-
-    /* Initialize peripherals */
+    int i;
+    for(i=0; i<64; i++)
+    {
+        pix[i] = 1;//i%8;
+    }
 }
 
+void MainApp(void)
+{
+    j++;
+    if (j==0xFFFF) { 
+        pix[0] ^= 1; 
+        j=0;
+    }
+    
+}
