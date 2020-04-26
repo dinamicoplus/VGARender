@@ -73,3 +73,5 @@
 #pragma config TMPRPIN = OFF            // Tamper Pin Enable bit (TMPRN pin function is disabled)
 #pragma config SOSCHP = ON              // SOSC High Power Enable bit (valid only when SOSCSEL = 1 (Enable SOSC high power mode (default))
 #pragma config ALTI2C1 = ALTI2CDIS      // Alternate I2C pin Location (ASDA1 and ASCL1 on RB5 and RB6)
+
+#define FCY 32000000UL

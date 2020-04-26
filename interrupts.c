@@ -147,10 +147,11 @@
 /* Interrupt Routines                                                         */
 /******************************************************************************/
 
-void __attribute__((__interrupt__,no_auto_psv)) _CCP1Interrupt(void)
-{
+//void __attribute__((__interrupt__,no_auto_psv)) _CCP1Interrupt(void)
+//{
     //LATAbits.LATA0 ^= 1 ;
-    __asm__("btg LATA,#0\nbtg LATA,#0");
-    IFS3bits.CCP1IF = 0;
-}
+//    IFS3bits.CCP1IF = 0;
+//    __asm__("btg LATA,#0\nbtg LATA,#0");
+
+//}
 
