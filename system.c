@@ -35,7 +35,7 @@ __builtin functions. */
 #define BITS2BYTEH(sfrBitfield) ( ((unsigned char*) &sfrBitfield)[1] )
 // Return the high byte (as a unsigned char) of a bitfield.
 int lines = 0;
-#include "pixels.h"
+
 void Configuration(void)
 {
     //Oscillator configuration
