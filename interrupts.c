@@ -9,6 +9,7 @@
 
 #include <stdint.h>        /* Includes uint16_t definition */
 #include <stdbool.h>       /* Includes true/false definition */
+#include "system.h"
 
 /******************************************************************************/
 /* Interrupt Vector Options                                                   */
@@ -147,11 +148,40 @@
 /* Interrupt Routines                                                         */
 /******************************************************************************/
 
-//void __attribute__((__interrupt__,no_auto_psv)) _CCP1Interrupt(void)
-//{
-    //LATAbits.LATA0 ^= 1 ;
-//    IFS3bits.CCP1IF = 0;
-//    __asm__("btg LATA,#0\nbtg LATA,#0");
+void __attribute__((__interrupt__,no_auto_psv)) _CCP1Interrupt(void)
+{
+    IFS3bits.CCP1IF = 0;
+    if (lines<SYNC_LINES) 
+    {
+        CCP1CON2Hbits.OCAEN = 0;
+        __asm__("bclr LATB, #9");
+    } else if (lines>SUM(SYNC_LINES,BACKPORCH_LINES,0) && lines <SUM(SYNC_LINES,BACKPORCH_LINES,VIDEO_LINES)) 
+    {
+        __asm__("bset LATB, #9");
+        CCP1CON2Hbits.OCAEN = 1;
+        int i;
+        int k = ((lines-35)/8);
+        //__asm__("btg LATA,#0\nbtg LATA,#0");
+        //__asm__("bset LATA,#0");
+        //__asm__("bset LATA,#1");
+        //__asm__("bset LATA,#2");
+        for (i=0; i<19; i++) __asm__("nop");
+        if(k<PIX_H) {
+            for (i=0; i<PIX_W; i++) {LATA = pix[k][i];}//__asm__("nop");
+        }
+        __asm__("clr LATA");   
+    } else {
+        CCP1CON2Hbits.OCAEN = 1;
+        __asm__("bset LATB, #9");
+    }
+    lines++;
+    if (lines > 525) 
+    {
+        lines = 0;
+    }
+}
 
-//}
-
+void __attribute__((__interrupt__,no_auto_psv)) _CCT1Interrupt(void)
+{
+    IFS6bits.CCT1IF = 0;
+}

@@ -1,4 +1,4 @@
-/******************************************************************************/
+ /******************************************************************************/
 /* Files to Include                                                           */
 /******************************************************************************/
 
@@ -34,8 +34,8 @@ __builtin functions. */
 // Return the low byte (as a unsigned char) of a bitfield.
 #define BITS2BYTEH(sfrBitfield) ( ((unsigned char*) &sfrBitfield)[1] )
 // Return the high byte (as a unsigned char) of a bitfield.
-
-
+int lines = 0;
+#include "pixels.h"
 void Configuration(void)
 {
     //Oscillator configuration
@@ -90,6 +90,5 @@ void Configuration(void)
     TRISA = 0;
     TRISB = 0;
     TRISC = 0;
-
 }
 
