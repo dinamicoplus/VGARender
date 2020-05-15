@@ -14,11 +14,12 @@ go here. */
 #define FRONTPORCH_LINES 10
 #define VIDEO_LINES 480
 #define SUM(a,b,c) a+b+c
-#define PIX_W 80
-#define PIX_H 60
+#define PIX_W 150
+#define PIX_H 96
 
 extern int lines;
 extern unsigned char pix[PIX_H][PIX_W];
+void line_render(int lines);
 
 void Configuration(void); /* Handles clock switching/osc initialization */
 
