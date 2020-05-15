@@ -160,14 +160,10 @@ void __attribute__((__interrupt__,no_auto_psv)) _CCP1Interrupt(void)
         __asm__("bset LATB, #9");
         CCP1CON2Hbits.OCAEN = 1;
         int i;
-        int k = ((lines-35)/8);
-        //__asm__("btg LATA,#0\nbtg LATA,#0");
-        //__asm__("bset LATA,#0");
-        //__asm__("bset LATA,#1");
-        //__asm__("bset LATA,#2");
-        for (i=0; i<19; i++) __asm__("nop");
+        int k = ((lines-35)/5);
+        for (i=0; i<25; i++) __asm__("nop");
         if(k<PIX_H) {
-            for (i=0; i<PIX_W; i++) {LATA = pix[k][i];}//__asm__("nop");
+            line_render(k);
         }
         __asm__("clr LATA");   
     } else {
