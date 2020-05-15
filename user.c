@@ -19,6 +19,7 @@
 #include <stdbool.h>         /* For true/false definition */
 
 #include "user.h"            /* variables/params used by user.c */
+#include "system.h"
 
 /******************************************************************************/
 /* User Functions                                                             */
@@ -30,19 +31,23 @@
 unsigned int j=0;
 void InitApp(void)
 {
-    int i;
-    for(i=0; i<64; i++)
+    /*int i,j;
+    for(i=0; i<PIX_W; i++)
     {
-        pix[i] = 1;//i%8;
-    }
+        for(j=0; j<PIX_H; j++)
+        {
+            pix[j][i] = j*i%8;
+            if (i==PIX_W-1 || i==0 || j==PIX_H-1 || j==0) pix[j][i] = 7;
+        }
+    }*/
 }
 
 void MainApp(void)
 {
-    j++;
+    /*j++;
     if (j==0xFFFF) { 
-        pix[0] ^= 1; 
+        //pix[200][20] ^= 1; 
         j=0;
-    }
+    }*/
     
 }

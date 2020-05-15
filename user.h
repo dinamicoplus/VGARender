@@ -9,6 +9,5 @@
 /******************************************************************************/
 
 /* TODO User level functions prototypes (i.e. InitApp) go here */
-extern unsigned char pix[64];
 void InitApp(void);         /* I/O and Peripheral Initialization */
 void MainApp(void);
