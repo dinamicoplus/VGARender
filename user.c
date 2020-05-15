@@ -36,19 +36,6 @@ char state = SCAN;
     
 void InitApp(void)
 {
-//    int i, j;
-//    for (i=0; i<PIX_W; i++)
-//    {
-//        for (j=0; j<PIX_H; j++)
-//        {
-//            pix[j][i]=0;
-//        }
-//    }
-//    pix[1][1] = 7;
-//    pix[2][2] = 7;
-//    pix[2][3] = 7;
-//    pix[3][1] = 7;
-//    pix[3][2] = 7;
 }
 
 void MainApp(void)
@@ -58,21 +45,18 @@ void MainApp(void)
     time++;
     if (time==0x03FF) {
         if (state==SCAN) {
-            for (i=1; i<PIX_W-1; i++)
-            {
-                for (j=1; j<PIX_H-1; j++)
-                {
+            for (i=1; i<PIX_W-1; i++) {
+                for (j=1; j<PIX_H-1; j++) {
                     count = 0;
-                    if ((pix[j-1][i-1]&7)==7)   count++;
-                    if ((pix[j-1][i]&7)==7)     count++;
-                    if ((pix[j-1][i+1]&7)==7)   count++;
-                    if ((pix[j][i-1]&7)==7)     count++;            
-                    if ((pix[j][i+1]&7)==7)     count++;
-                    if ((pix[j+1][i-1]&7)==7)   count++;            
-                    if ((pix[j+1][i]&7)==7)     count++;
-                    if ((pix[j+1][i+1]&7)==7)   count++;
-                    if ((pix[j][i]&7)==7)
-                    {
+                    if ((pix[j-1][i-1]&7)>0)   count++;
+                    if ((pix[j-1][i]&7)>0)     count++;
+                    if ((pix[j-1][i+1]&7)>0)   count++;
+                    if ((pix[j][i-1]&7)>0)     count++;            
+                    if ((pix[j][i+1]&7)>0)     count++;
+                    if ((pix[j+1][i-1]&7)>0)   count++;            
+                    if ((pix[j+1][i]&7)>0)     count++;
+                    if ((pix[j+1][i+1]&7)>0)   count++;
+                    if ((pix[j][i]&7)>0) {
                         switch(count) {
                             case 0:
                             case 1:
@@ -81,16 +65,19 @@ void MainApp(void)
                             case 6:
                             case 7:
                             case 8:
-                                pix[j][i]&=0b0111;     
+                                pix[j][i]&=0b0111;    
+                                break;
                         } switch(count) {
                             case 2:
                             case 3:
                                 pix[j][i]|=0b1000;    
+                                break;
                         }
                     } else {
                         switch(count) {
                             case 3:
                                 pix[j][i]|=0b1000;
+                                break;
                         }
                     }
                 }
@@ -102,7 +89,18 @@ void MainApp(void)
                 for (j=1; j<PIX_H-1; j++)
                 {
                     if ((pix[j][i]&0b1000)>>3) {
-                        pix[j][i]=7;
+                        switch(pix[j][i]&0b0111) {
+                            case 0b0000:
+                                pix[j][i] = 0b0111;
+                                break;
+                            case 0b0111:
+                                pix[j][i] = 0b0110;
+                                break;
+                            case 0b0110:
+                            case 0b0100:
+                                pix[j][i] = 0b0100; 
+                                break;
+                        }
                     } else {
                         pix[j][i]=0;
                     }
