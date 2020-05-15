@@ -29,25 +29,35 @@
 
 /* TODO Initialize User Ports/Peripherals/Project here */
 unsigned int j=0;
+struct struct_test {
+    unsigned char x;
+    unsigned char y;
+    signed char dirx;
+};
+struct struct_test player;
+
 void InitApp(void)
 {
-    /*int i,j;
-    for(i=0; i<PIX_W; i++)
-    {
-        for(j=0; j<PIX_H; j++)
-        {
-            pix[j][i] = j*i%8;
-            if (i==PIX_W-1 || i==0 || j==PIX_H-1 || j==0) pix[j][i] = 7;
-        }
-    }*/
+    player.x = 0;
+    player.y = 0;
+    player.dirx = 1;
+    player.dirx = 0;
 }
 
 void MainApp(void)
 {
-    /*j++;
-    if (j==0xFFFF) { 
-        //pix[200][20] ^= 1; 
+    j++;
+    if (j==0x0FFF) { 
+        pix[player.y][player.x] = 0;
+        if (player.x==PIX_W) {
+            player.dirx = -1;
+            player.y++;
+        }
+        if (player.x==0) {
+            player.dirx = 1;
+            player.y++;
+        }
+        player.x += player.dirx;
         j=0;
-    }*/
-    
+    }
 }
