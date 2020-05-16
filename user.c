@@ -29,91 +29,112 @@
 
 /* TODO Initialize User Ports/Peripherals/Project here */
 unsigned long int time=0;
-unsigned int period = 0;
-enum {
+unsigned long int period = 0xFFF;
+
+void scan_state();
+void print_state();
+
+void (* state[])(void) = { scan_state, print_state};
+enum state_codes {
     SCAN, PRINT
 };
-char state = SCAN;
-    
+
+struct transition {
+    enum state_codes src_state;
+    enum state_codes dst_state;
+};
+struct transition state_transitions[] = {
+    {SCAN,    PRINT},
+    {PRINT,   SCAN}
+};
+
+enum state_codes cur_state = SCAN;
+void (* state_fun)(void);
+
 void InitApp(void)
 {
 }
 
 void MainApp(void)
 {
-    int i, j;
-    char count;
-    time++;
-    //period = PORTBbits.RB12;
     AD1CON1bits.SAMP = 1; // start sampling...
-
     if (time>period) {
-        if (state==SCAN) {
-            for (i=1; i<PIX_W-1; i++) {
-                for (j=1; j<PIX_H-1; j++) {
-                    count = 0;
-                    if ((pix[j-1][i-1]&7)>0)   count++;
-                    if ((pix[j-1][i]&7)>0)     count++;
-                    if ((pix[j-1][i+1]&7)>0)   count++;
-                    if ((pix[j][i-1]&7)>0)     count++;            
-                    if ((pix[j][i+1]&7)>0)     count++;
-                    if ((pix[j+1][i-1]&7)>0)   count++;            
-                    if ((pix[j+1][i]&7)>0)     count++;
-                    if ((pix[j+1][i+1]&7)>0)   count++;
-                    if ((pix[j][i]&7)>0) {
-                        switch(count) {
-                            case 0:
-                            case 1:
-                            case 4:
-                            case 5:
-                            case 6:
-                            case 7:
-                            case 8:
-                                pix[j][i]&=0b0111;    
-                                break;
-                        } switch(count) {
-                            case 2:
-                            case 3:
-                                pix[j][i]|=0b1000;    
-                                break;
-                        }
-                    } else {
-                        switch(count) {
-                            case 3:
-                                pix[j][i]|=0b1000;
-                                break;
-                        }
-                    }
-                }
-            }
-            state = PRINT;
-        } else if (state==PRINT) {
-            for (i=1; i<PIX_W-1; i++)
-            {
-                for (j=1; j<PIX_H-1; j++)
-                {
-                    if ((pix[j][i]&0b1000)>>3) {
-                        switch(pix[j][i]&0b0111) {
-                            case 0b0000:
-                                pix[j][i] = 0b0111;
-                                break;
-                            case 0b0111:
-                                pix[j][i] = 0b0110;
-                                break;
-                            case 0b0110:
-                            case 0b0100:
-                                pix[j][i] = 0b0100; 
-                                break;
-                        }
-                    } else {
-                        pix[j][i]=0;
-                    }
-                }
-            }
-            state = SCAN;
-        }
+        state_fun = state[cur_state];
+        state_fun();
+        cur_state = state_transitions[cur_state].dst_state;
         time=0;
     }
+    time++;
     AD1CON1bits.SAMP = 0; // start converting
+    //period = PORTBbits.RB12;
+}
+
+void scan_state() {
+    int i, j;
+    char count;
+    for (i=1; i<PIX_W-1; i++) {
+        for (j=1; j<PIX_H-1; j++) {
+            count = 0;
+            if ((pix[j-1][i-1]&7)>0)   count++;
+            if ((pix[j-1][i]&7)>0)     count++;
+            if ((pix[j-1][i+1]&7)>0)   count++;
+            if ((pix[j][i-1]&7)>0)     count++;            
+            if ((pix[j][i+1]&7)>0)     count++;
+            if ((pix[j+1][i-1]&7)>0)   count++;            
+            if ((pix[j+1][i]&7)>0)     count++;
+            if ((pix[j+1][i+1]&7)>0)   count++;
+            if ((pix[j][i]&7)>0) {
+                switch(count) {
+                    case 0:
+                    case 1:
+                    case 4:
+                    case 5:
+                    case 6:
+                    case 7:
+                    case 8:
+                        pix[j][i]&=0b0111;    
+                        break;
+                } switch(count) {
+                    case 2:
+                    case 3:
+                        pix[j][i]|=0b1000;    
+                        break;
+                }
+            } else {
+                switch(count) {
+                    case 3:
+                        pix[j][i]|=0b1000;
+                        break;
+                }
+            }
+        }
+    }
+    period = ADC1BUF0<<6;
+}
+
+void print_state() {
+    int i, j;
+    for (i=1; i<PIX_W-1; i++)
+    {
+        for (j=1; j<PIX_H-1; j++)
+        {
+            if ((pix[j][i]&0b1000)>>3) {
+                switch(pix[j][i]&0b0111) {
+                    case 0b0000:
+                        pix[j][i] = 0b0111;
+                        break;
+                    case 0b0111:
+                        pix[j][i] = 0b0110;
+                        break;
+                    case 0b0110:
+                    case 0b0100:
+                        pix[j][i] = 0b0100; 
+                        break;
+                }
+            } else {
+                pix[j][i]=0;
+            }
+        }
+    }    
     period = ADC1BUF0<<6;
 }
