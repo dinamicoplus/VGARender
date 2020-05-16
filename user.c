@@ -29,6 +29,7 @@
 
 /* TODO Initialize User Ports/Peripherals/Project here */
 unsigned long int time=0;
+unsigned int period = 0;
 enum {
     SCAN, PRINT
 };
@@ -43,7 +44,10 @@ void MainApp(void)
     int i, j;
     char count;
     time++;
-    if (time==0x03FF) {
+    //period = PORTBbits.RB12;
+    AD1CON1bits.SAMP = 1; // start sampling...
+
+    if (time>period) {
         if (state==SCAN) {
             for (i=1; i<PIX_W-1; i++) {
                 for (j=1; j<PIX_H-1; j++) {
@@ -110,4 +114,6 @@ void MainApp(void)
         }
         time=0;
     }
+    AD1CON1bits.SAMP = 0; // start converting
+    period = ADC1BUF0<<6;
 }

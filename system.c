@@ -88,7 +88,17 @@ void Configuration(void)
     INTCON2bits.GIE = 1;
     
     TRISA = 0;
-    TRISB = 0;
     TRISC = 0;
+    TRISAbits.TRISA12 = 1;
+    TRISBbits.TRISB12 = 1;
+    ANSBbits.ANSB12 = 1;
+
+    AD1CON1 = 0x0000; // SAMP bit = 0 ends sampling and starts converting
+    AD1CHS = 0x0008; // Connect AN2 as S/H+ input
+    // in this example AN2 is the input
+    AD1CSSL = 0;
+    AD1CON3 = 0x0002; // Manual Sample, Tad = 3Tcy
+    AD1CON2 = 0;
+    AD1CON1bits.ADON = 1; // turn ADC ON
 }
 
