@@ -6,4 +6,5 @@ dist
 *.swp
 *.o
 *.a
-nbproject
+nbproject/Makefile-local*
+nbproject/private
