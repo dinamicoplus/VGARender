@@ -1,11 +1,16 @@
+; Marcos Brito, 2020
+; Line Scanner render.
+; Moves each pixel from one line to the Port A
+
 .section    .isr.text,code,keep
 .align  2
 .global _line_render
 _line_render:
     mov #150,w4
-    mul.ss w0,w4,w6
+    mul.ss w0,w4,w6 ; w0 in the function argument. It store the current lines
+                    ; We multiply the current line by 150 to generate the offset
     mov #_pix-1,w1
-    add w6,w1,w0
+    add w6,w1,w0    ; We add the offset to the pix variable initial address
     clr w2
     inc w0,w1
     ze [w1++],w0
@@ -263,8 +268,6 @@ _line_render:
     ze [w1++],w0
     mov w0,_LATA
     ze [w1++],w0
-    mov w0,_LATA   
-    ze [w1++],w0
     mov w0,_LATA
     ze [w1++],w0
     mov w0,_LATA
@@ -307,9 +310,10 @@ _line_render:
     ze [w1++],w0
     mov w0,_LATA
     ze [w1++],w0
-    mov w0,_LATA  
+    mov w0,_LATA
+    ze [w1++],w0
+    mov w0,_LATA
 	nop
-    clr _LATA    
+    clr _LATA
     return
 .end
-
