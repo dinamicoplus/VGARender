@@ -1,1 +1,1 @@
-python img_dith.py -w 63 -o parrot.bmp -l ..\pixels.h parrot.jpg
+python img_dith.py -o parrot.bmp -header ..\src\pixels.h parrot.jpg
