@@ -1,14 +1,12 @@
-/******************************************************************************/
-/* System Level #define Macros                                                */
-/******************************************************************************/
+/**
+    System, system.h
+    Purpose: This file contains all the system functions that handle
+    system configuration and initialization.
 
-/******************************************************************************/
-/* System Function Prototypes                                                 */
-/******************************************************************************/
+    @author Marcos Brito
+    @version 0.1 15/05/20
+*/
 
-/* Custom oscillator configuration funtions, reset source evaluation
-functions, and other non-peripheral microcontroller initialization functions
-go here. */
 #define SYNC_LINES 2
 #define BACKPORCH_LINES 33
 #define FRONTPORCH_LINES 10
@@ -22,4 +20,3 @@ extern unsigned char pix[PIX_H][PIX_W];
 void line_render(int lines);
 
 void Configuration(void); /* Handles clock switching/osc initialization */
-

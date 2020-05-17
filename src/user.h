@@ -1,13 +1,17 @@
-/******************************************************************************/
-/* User Level #define Macros                                                  */
-/******************************************************************************/
+/**
+    User, user.h
+    Purpose: This file contains all the user functions. With these functions we
+    are going to implement the famous Conway's Game of Life as a demonstration
+    of the uC capacity. The system will evolve from an initial state without
+    end.
 
-/* TODO Application specific user parameters used in user.c may go here */
+    @author Marcos Brito
+    @version 0.1 15/05/20
+*/
 
 /******************************************************************************/
 /* User Function Prototypes                                                   */
 /******************************************************************************/
 
-/* TODO User level functions prototypes (i.e. InitApp) go here */
-void InitApp(void);         /* I/O and Peripheral Initialization */
+void InitApp(void);
 void MainApp(void);
