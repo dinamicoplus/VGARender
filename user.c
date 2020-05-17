@@ -31,25 +31,22 @@
 unsigned long int time=0;
 unsigned long int period = 0xFFF;
 
-void scan_state();
-void print_state();
+unsigned char scan_state();
+unsigned char print_state();
 
-void (* state[])(void) = { scan_state, print_state};
+unsigned char (* state[])(void) = { scan_state, print_state};
 enum state_codes {
     SCAN, PRINT
 };
-
-struct transition {
-    enum state_codes src_state;
-    enum state_codes dst_state;
-};
-struct transition state_transitions[] = {
-    {SCAN,    PRINT},
-    {PRINT,   SCAN}
+        
+enum state_codes state_transitions[][2] = {
+    [SCAN] = {PRINT},
+    [PRINT] = {SCAN}
 };
 
 enum state_codes cur_state = SCAN;
-void (* state_fun)(void);
+unsigned char (* state_fun)(void);
+
 
 void InitApp(void)
 {
@@ -60,8 +57,8 @@ void MainApp(void)
     AD1CON1bits.SAMP = 1; // start sampling...
     if (time>period) {
         state_fun = state[cur_state];
-        state_fun();
-        cur_state = state_transitions[cur_state].dst_state;
+        unsigned char ret_code = state_fun();
+        cur_state = state_transitions[cur_state][ret_code];
         time=0;
     }
     time++;
@@ -69,7 +66,7 @@ void MainApp(void)
     //period = PORTBbits.RB12;
 }
 
-void scan_state() {
+unsigned char scan_state() {
     int i, j;
     char count;
     for (i=1; i<PIX_W-1; i++) {
@@ -110,9 +107,10 @@ void scan_state() {
         }
     }
     period = ADC1BUF0<<6;
+    return 0;
 }
 
-void print_state() {
+unsigned char print_state() {
     int i, j;
     for (i=1; i<PIX_W-1; i++)
     {
@@ -137,4 +135,5 @@ void print_state() {
         }
     }    
     period = ADC1BUF0<<6;
+    return 0;
 }
