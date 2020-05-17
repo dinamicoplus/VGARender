@@ -10,6 +10,10 @@ The repository is structured as follows:
 - **PCB_Design/VGA_adapter**: Contains the schematics and PCB design for the VGA Adaptor to be plug in the [PIC24F Curiosity Board](https://www.microchip.com/DevelopmentTools/ProductDetails/DM240004).
 - **dithering**: Contains the python scripts that have been used for this project to generate and adapt images to be used in the microcontroller.
 
+### Releases
+
+**[VGA Render Project v0.2](https://github.com/dinamicoplus/VGARender/releases/tag/v0.2)**
+
 ## Installing and compilation
 
 This project has been created using [MPLABX X IDE](https://www.microchip.com/mplab/mplab-x-ide) from Microchip. To compile the project and flash it into the [PIC24F Curiosity Board](https://www.microchip.com/DevelopmentTools/ProductDetails/DM240004), download **nbproject** and **src** into the same folder. Then MPLAB X IDE will detect this as a MPLAB project and set it as an active project. From there, there is two configurations available:
