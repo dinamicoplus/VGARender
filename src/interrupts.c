@@ -77,7 +77,7 @@ void __attribute__((__interrupt__,no_auto_psv)) _CCP1Interrupt(void)
     }
 
     // VISIBLE AREA
-    else if (lines>SUM(SYNC_LINES,BACKPORCH_LINES,0) &&
+    else if (lines>=SUM(SYNC_LINES,BACKPORCH_LINES,0) &&
              lines<SUM(SYNC_LINES,BACKPORCH_LINES,VIDEO_LINES))
     {
         __asm__("bset LATB, #9");   // V_SYNC disabled.
