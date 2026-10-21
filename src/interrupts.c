@@ -100,7 +100,7 @@ void __attribute__((__interrupt__,no_auto_psv)) _CCP1Interrupt(void)
         __asm__("bset LATB, #9");   // V_SYNC is still disabled.
     }
     lines++;
-    if (lines > 525)
+    if (lines >= 525)
     {
         lines = 0;                  // Reset once we reach 525 lines
     }
