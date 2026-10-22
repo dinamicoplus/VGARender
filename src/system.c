@@ -115,6 +115,7 @@ void Configuration(void)
     TRISA = 0;                    // Sets PORTA as outputs
     TRISC = 0;                    // Sets PORTC as outputs
     TRISAbits.TRISA12 = 1;        // Sets RA12 as input
+    TRISBbits.TRISB9 = 0;         // Sets RB9 (V_SYNC) as output
     TRISBbits.TRISB12 = 1;        // Sets RB12 as input
     ANSBbits.ANSB12 = 1;          // Sets RA12 as an analogic input
 
