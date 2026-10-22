@@ -6,11 +6,11 @@ from the files in `chip8/roms/`.
 
 ## Controls
 
-| Screen   | Knob               | S1                 | S2         |
-|----------|--------------------|--------------------|------------|
-| Menu     | choose a ROM       |                    | select     |
-| Controls | choose the key     | next input         | start      |
-| Game     | left / right zones | mapped key         | mapped key |
+| Screen   | Knob               | S1                 | S2         | S1 + S2    |
+|----------|--------------------|--------------------|------------|------------|
+| Menu     | choose a ROM       |                    | select     |            |
+| Controls | choose the key     | next input         | start      |            |
+| Game     | left / right zones | mapped key         | mapped key | mapped key |
 
 Hold S1 and S2 together for 1.5 s to go back to the menu from anywhere.
 
@@ -27,16 +27,23 @@ blue LED of the RGB LED lights while the CHIP-8 sound timer is running.
 
    ```
    name: MY GAME        menu name (A-Z, 0-9, - : . / and spaces)
-   keys: 4 6 5 -        CHIP-8 key for knob L, knob R, S1, S2 (- for none)
-   quirks: vip          vip (COSMAC VIP, default) or schip
+   keys: 4 6 5 - F      CHIP-8 key for knob L, knob R, S1, S2 and S1 + S2
+                        (- for none; the fifth one is optional)
+   quirks: vip          vip (COSMAC VIP, default), chip48 or schip
    speed: 12            instructions per frame, 60 frames per second
    ```
 
 3. Run `python3 chip8/make_roms.py` and build the project.
 
 The RAM left for the interpreter allows the standard 4 KB CHIP-8 memory, so
-any ROM up to 3584 bytes fits. The included ROMs (DODGE, PONG and KEYTEST) are
-original programs written for this project.
+any ROM up to 3584 bytes fits. DODGE, SOLO PONG and KEYTEST are original
+programs written for this project; the other games come from the BriChip
+repository (the classic CHIP-8 game pack). Their platform (quirks), speed
+and keys follow the community CHIP-8 database where it lists them.
+
+Some games need more keys than the five inputs: TIC-TAC-TOE (keys 1-9),
+the second player of PONG, PONG 2 and VERS, and the options of SYZYGY. Any
+key can be remapped on the controls screen.
 
 ## Display
 

@@ -1,0 +1,6 @@
+name: WIPE OFF
+keys: 4 6 - -
+quirks: vip
+speed: 15
+
+4 left, 6 right.

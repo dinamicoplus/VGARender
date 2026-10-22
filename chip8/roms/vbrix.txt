@@ -1,0 +1,6 @@
+name: VERTICAL BRIX
+keys: 1 4 - 7
+quirks: vip
+speed: 15
+
+1 up, 4 down, 7 starts.

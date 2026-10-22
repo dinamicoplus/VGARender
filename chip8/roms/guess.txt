@@ -1,0 +1,6 @@
+name: GUESS THE NUMBER
+keys: - - 6 5
+quirks: vip
+speed: 15
+
+Think of a number 1-63: 5 if it is shown, 6 if not.

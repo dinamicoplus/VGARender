@@ -1,0 +1,6 @@
+name: PUZZLE
+keys: 4 6 2 8
+quirks: vip
+speed: 15
+
+Slide the tiles with 2, 4, 6 and 8.

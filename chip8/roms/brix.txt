@@ -1,0 +1,6 @@
+name: BRIX
+keys: 4 6 - -
+quirks: vip
+speed: 15
+
+Breakout: 4 left, 6 right. (Same file as BREAKOUT.)

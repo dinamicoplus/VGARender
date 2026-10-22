@@ -1,0 +1,6 @@
+name: HIDDEN
+keys: 4 6 2 5 8
+quirks: vip
+speed: 15
+
+Memory game: 2 up, 4 left, 6 right, 8 down, 5 flips.

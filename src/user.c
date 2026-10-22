@@ -5,10 +5,10 @@
     two buttons of the Curiosity board.
 
     - Menu: the knob picks a ROM, S2 selects it.
-    - Controls: the four physical inputs (knob turned left, knob turned
-      right, S1 and S2) can be mapped to any CHIP-8 key. S1 moves to the
-      next input, the knob picks the key, S2 starts the game. Every ROM
-      comes with its own default mapping.
+    - Controls: the five physical inputs (knob turned left, knob turned
+      right, S1, S2, and S1 + S2 pressed together) can be mapped to any
+      CHIP-8 key. S1 moves to the next input, the knob picks the key, S2
+      starts the game. Every ROM comes with its own default mapping.
     - Game: hold S1 and S2 together for 1.5 s to go back to the menu.
 
     The CHIP-8 screen (64 x 32) is drawn 2 pixels wide and 1 or 2 rows tall
@@ -61,11 +61,13 @@ unsigned char pix[PIX_H][PIX_W];
 #define Q_CLIP      0x08    // sprites are clipped at the edges, not wrapped
 #define Q_SHIFT     0x10    // 8xy6/8xyE shift vX in place (ignore vY)
 #define Q_JUMP      0x20    // Bxnn jumps to xnn + vX instead of nnn + v0
+#define Q_MEMORY_X  0x40    // Fx55/Fx65 leave I + x (CHIP-48), not I + x + 1
 #define QUIRKS_VIP     (Q_VF_RESET | Q_MEMORY | Q_DISPWAIT | Q_CLIP)
+#define QUIRKS_CHIP48  (Q_CLIP | Q_SHIFT | Q_JUMP | Q_MEMORY_X)
 #define QUIRKS_SCHIP   (Q_CLIP | Q_SHIFT | Q_JUMP)
 
 #define KEY_NONE    0xFF
-#define INPUTS      4       // knob left, knob right, S1, S2
+#define INPUTS      5       // knob left, knob right, S1, S2, S1 + S2
 
 struct rom_info {
     const char *name;
@@ -269,10 +271,11 @@ static void draw_char(uint8_t x, uint8_t y, char ch, unsigned char c)
 }
 
 /**
- * Draws a string, 8 pixels per character (18 fit in a row). x = 255 centres
- * it. Characters beyond the right edge are dropped.
+ * Draws a string, `step` pixels per character (characters are 6 wide).
+ * x = 255 centres it. Characters beyond the right edge are dropped.
  */
-static void draw_text(uint8_t x, uint8_t y, const char *s, unsigned char c)
+static void draw_text_step(uint8_t x, uint8_t y, const char *s, unsigned char c,
+                           uint8_t step)
 {
     uint8_t n = 0;
 
@@ -280,12 +283,20 @@ static void draw_text(uint8_t x, uint8_t y, const char *s, unsigned char c)
         n++;
     }
     if (x == 255) {
-        x = (n * 8 < PIX_W) ? (PIX_W - (8 * n - 2)) / 2 : 0;
+        x = (n * step < PIX_W) ? (PIX_W - (step * n - (step - 6))) / 2 : 0;
     }
     while (*s && x + 6 <= PIX_W) {
         draw_char(x, y, *s++, c);
-        x += 8;
+        x += step;
     }
+}
+
+/**
+ * Draws a string, 8 pixels per character (18 fit in a row).
+ */
+static void draw_text(uint8_t x, uint8_t y, const char *s, unsigned char c)
+{
+    draw_text_step(x, y, s, c, 8);
 }
 
 static char hex_digit(uint8_t v)
@@ -569,12 +580,14 @@ static enum step_results c8_step(void)
                 mem[(I + i) & 0xFFF] = V[i];
             }
             if (quirks & Q_MEMORY) I += x + 1;
+            if (quirks & Q_MEMORY_X) I += x;
             break;
         case 0x65:                                      // LD v0..vX, [I]
             for (i = 0; i <= x; i++) {
                 V[i] = mem[(I + i) & 0xFFF];
             }
             if (quirks & Q_MEMORY) I += x + 1;
+            if (quirks & Q_MEMORY_X) I += x;
             break;
         default:
             goto bad;
@@ -657,17 +670,20 @@ static uint8_t knob_select(uint8_t n, uint8_t current)
 
 /**
  * Translates the physical inputs into CHIP-8 keys with the current mapping.
+ * S1 and S2 pressed together count as a fifth input, not as both keys.
  */
 static uint16_t mapped_keys(void)
 {
+    bool both = (buttons & (BTN_S1 | BTN_S2)) == (BTN_S1 | BTN_S2);
     bool active[INPUTS];
     uint16_t k = 0;
     uint8_t i;
 
     active[0] = knob_left;
     active[1] = knob_right;
-    active[2] = (buttons & BTN_S1) != 0;
-    active[3] = (buttons & BTN_S2) != 0;
+    active[2] = (buttons & BTN_S1) && !both;
+    active[3] = (buttons & BTN_S2) && !both;
+    active[4] = both;
     for (i = 0; i < INPUTS; i++) {
         if (active[i] && keymap[i] != KEY_NONE) {
             k |= 1u << keymap[i];
@@ -681,9 +697,9 @@ static uint16_t mapped_keys(void)
 /******************************************************************************/
 #define MENU_ROWS   5
 static const char *const input_names[INPUTS] = {
-    "KNOB L", "KNOB R", "S1", "S2"
+    "KNOB L", "KNOB R", "S1", "S2", "S1+S2"
 };
-static const char input_labels[INPUTS] = {'L', 'R', '1', '2'};
+static const char input_labels[INPUTS] = {'L', 'R', '1', '2', '+'};
 
 static void draw_menu(void)
 {
@@ -710,7 +726,7 @@ static void draw_controls(void)
     clear_all();
     draw_text(255, 1, roms[selected].name, YELLOW);
     for (i = 0; i < INPUTS; i++) {
-        uint8_t y = 12 + 9 * i;
+        uint8_t y = 11 + 9 * i;
         if (i == cursor) {
             draw_char(4, y, '>', WHITE);
         }
@@ -724,11 +740,11 @@ static void draw_controls(void)
 
 /**
  * Frame and labels around the running game: the ROM name on top and the key
- * of each input at the bottom ("L:4 R:6 1:5 2:-").
+ * of each input at the bottom ("L:4 R:6 1:5 2:- +:F").
  */
 static void draw_game_frame(void)
 {
-    char text[16];
+    char text[4 * INPUTS];
     uint8_t i, n = 0;
 
     clear_all();
@@ -747,7 +763,7 @@ static void draw_game_frame(void)
         text[n++] = (keymap[i] == KEY_NONE) ? '-' : hex_digit(keymap[i]);
     }
     text[n] = '\0';
-    draw_text(255, 58, text, BLUE);
+    draw_text_step(255, 58, text, BLUE, 7);
 }
 
 static void draw_halted(void)

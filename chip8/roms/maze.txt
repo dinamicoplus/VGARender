@@ -1,0 +1,6 @@
+name: MAZE
+keys: - - - -
+quirks: vip
+speed: 15
+
+Draws a random maze; no input.

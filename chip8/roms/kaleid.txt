@@ -1,0 +1,6 @@
+name: KALEIDOSCOPE
+keys: 4 6 2 8 0
+quirks: vip
+speed: 15
+
+Draw with 2, 4, 6 and 8; 0 repeats the pattern.

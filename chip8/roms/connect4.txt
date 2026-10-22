@@ -1,0 +1,6 @@
+name: CONNECT 4
+keys: 4 6 - 5
+quirks: schip
+speed: 30
+
+Two players: 4 left, 6 right, 5 drops the piece.

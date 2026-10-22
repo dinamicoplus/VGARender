@@ -2,7 +2,7 @@
 ; Useful to check a key mapping: every input shows the key it sends.
 ;
 ; name: KEYTEST
-; keys: 4 6 5 A         (knob left, knob right, S1, S2)
+; keys: 4 6 5 A B       (knob left, knob right, S1, S2, S1 + S2)
 ; quirks: vip
 ; speed: 12
 

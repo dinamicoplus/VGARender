@@ -10,9 +10,10 @@ Each ROM can declare its menu entry in comment lines, inside the .asm or in
 a name.txt file next to the .ch8:
 
     ; name: DODGE           menu name (A-Z, 0-9, - : . / and spaces)
-    ; keys: 4 6 - 5         CHIP-8 key for knob left, knob right, S1, S2
-                            (hex digit, or - for none)
-    ; quirks: vip           vip (COSMAC VIP, default) or schip
+    ; keys: 4 6 - 5 F       CHIP-8 key for knob left, knob right, S1, S2
+                            and S1 + S2 together (hex digit, or - for
+                            none; the fifth one is optional)
+    ; quirks: vip           vip (COSMAC VIP, default), chip48 or schip
     ; speed: 12             instructions per frame (60 frames per second)
 
 Usage:  python3 make_roms.py
@@ -31,7 +32,7 @@ NAME_CHARS = set('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-:>+./ ')
 
 
 def metadata(text, default_name):
-    meta = {'name': default_name, 'keys': '- - - -', 'quirks': 'vip', 'speed': '12'}
+    meta = {'name': default_name, 'keys': '- - - - -', 'quirks': 'vip', 'speed': '12'}
     for m in re.finditer(r'^\s*;?\s*(name|keys|quirks|speed)\s*:\s*(.+?)\s*(\(.*)?$',
                          text, re.MULTILINE):
         meta[m.group(1)] = m.group(2)
@@ -40,8 +41,11 @@ def metadata(text, default_name):
 
 def c_keys(spec, rom):
     keys = spec.split()
-    if len(keys) != 4:
-        raise SystemExit(f'{rom}: "keys" needs 4 entries (knob left, knob right, S1, S2)')
+    if len(keys) == 4:
+        keys.append('-')
+    if len(keys) != 5:
+        raise SystemExit(f'{rom}: "keys" needs 4 or 5 entries '
+                         '(knob left, knob right, S1, S2, S1 + S2)')
     out = []
     for k in keys:
         if k == '-':
@@ -81,14 +85,16 @@ def main():
         name = meta['name'].upper()[:16]
         if not set(name) <= NAME_CHARS:
             raise SystemExit(f'{file}: the font has no glyph for some letter of "{name}"')
-        quirks = {'vip': 'QUIRKS_VIP', 'schip': 'QUIRKS_SCHIP'}.get(meta['quirks'].lower())
+        quirks = {'vip': 'QUIRKS_VIP', 'chip48': 'QUIRKS_CHIP48',
+                  'schip': 'QUIRKS_SCHIP'}.get(meta['quirks'].lower())
         if not quirks:
-            raise SystemExit(f'{file}: quirks must be vip or schip')
+            raise SystemExit(f'{file}: quirks must be vip, chip48 or schip')
         entries.append((base, name, code, c_keys(meta['keys'], file), quirks,
                         int(meta['speed'])))
 
     if not entries:
         raise SystemExit('no ROMs found in chip8/roms')
+    entries.sort(key=lambda e: e[1])            # menu in alphabetical order
 
     lines = [
         '/**',

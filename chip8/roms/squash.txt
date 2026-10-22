@@ -1,0 +1,6 @@
+name: SQUASH
+keys: 1 4 - -
+quirks: vip
+speed: 15
+
+1 up, 4 down.

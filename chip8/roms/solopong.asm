@@ -1,7 +1,7 @@
-; PONG - one player against the computer. The first to 9 points wins;
+; SOLO PONG - one player against the computer. The first to 9 points wins;
 ; then press any key to play again.
 ;
-; name: PONG
+; name: SOLO PONG
 ; keys: 1 4 - -         (knob left = up, knob right = down)
 ; quirks: vip
 ; speed: 12

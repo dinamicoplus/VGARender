@@ -1,0 +1,6 @@
+name: TETRIS
+keys: 5 6 4 7
+quirks: vip
+speed: 15
+
+5 left, 6 right, 4 rotates, 7 drops.

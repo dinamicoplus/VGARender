@@ -1,0 +1,6 @@
+name: UFO
+keys: 4 6 - 5
+quirks: vip
+speed: 15
+
+4, 5 and 6 fire left, up and right.

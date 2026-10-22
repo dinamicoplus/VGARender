@@ -1,0 +1,6 @@
+name: VERS
+keys: 1 2 7 A
+quirks: vip
+speed: 15
+
+Two players; player 2 uses B, C, D and F (not mapped by default).

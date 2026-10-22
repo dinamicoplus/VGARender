@@ -1,0 +1,6 @@
+name: BLITZ
+keys: - - 5 5
+quirks: vip
+speed: 15
+
+Bomb the buildings before landing: 5 drops a bomb.

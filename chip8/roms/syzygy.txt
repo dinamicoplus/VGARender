@@ -1,0 +1,6 @@
+name: SYZYGY
+keys: 7 8 3 6 F
+quirks: chip48
+speed: 30
+
+Snake: 3 up, 6 down, 7 left, 8 right; F (S1+S2) starts. B and E are options (not mapped by default).

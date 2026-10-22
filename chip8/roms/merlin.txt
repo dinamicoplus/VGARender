@@ -1,0 +1,6 @@
+name: MERLIN
+keys: 4 5 7 8
+quirks: vip
+speed: 15
+
+Simon game with keys 4, 5, 7 and 8.

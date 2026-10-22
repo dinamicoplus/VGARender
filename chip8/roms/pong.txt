@@ -1,0 +1,6 @@
+name: PONG
+keys: 1 4 - -
+quirks: vip
+speed: 15
+
+Two players: 1/4 player 1, C/D player 2 (not mapped by default).

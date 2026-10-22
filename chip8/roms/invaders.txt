@@ -1,0 +1,6 @@
+name: SPACE INVADERS
+keys: 4 6 - 5
+quirks: schip
+speed: 30
+
+Space Invaders: 4 left, 6 right, 5 fires.
