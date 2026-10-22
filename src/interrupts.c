@@ -83,7 +83,10 @@ void __attribute__((__interrupt__,no_auto_psv)) _CCP1Interrupt(void)
         __asm__("bset LATB, #9");   // V_SYNC disabled.
         CCP1CON2Hbits.OCAEN = 1;    // H_SYNC starts generating.
         int i;
-        int k = ((lines-35)/5);     // Each 5 lines group is a vertical pixel.
+        // Each 5 lines group is a vertical pixel. pix only holds PIX_H rows,
+        // centred on the 96 row screen: rows above and below stay black
+        // (k wraps around to a large unsigned value above it).
+        unsigned int k = ((lines-35)/5) - PIX_Y0;
         for (i=0; i<25; i++) __asm__("nop"); // Wait until start displaying
                                              // That will keep the picture
                                              // centered in the screen.

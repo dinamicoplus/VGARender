@@ -13,7 +13,8 @@
 #define VIDEO_LINES 480
 #define SUM(a,b,c) a+b+c
 #define PIX_W 150
-#define PIX_H 96
+#define PIX_H 64                 // rows in pix (the screen fits 96)
+#define PIX_Y0 ((96 - PIX_H) / 2) // first screen row of pix, centred
 
 extern int lines;
 extern unsigned char pix[PIX_H][PIX_W];
