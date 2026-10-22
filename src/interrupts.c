@@ -72,7 +72,7 @@ void __attribute__((__interrupt__,no_auto_psv)) _CCP1Interrupt(void)
     // SYNC PULSE
     if (lines<SYNC_LINES)
     {
-        CCP1CON2Hbits.OCAEN = 0;    // H_SYNC will not generate during V_SYNC.
+        CCP1CON2Hbits.OCAEN = 1;    // H_SYNC keeps running during V_SYNC.
         __asm__("bclr LATB, #9");   // V_SYNC activated.
     }
 
