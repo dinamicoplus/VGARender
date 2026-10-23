@@ -1,14 +1,16 @@
 /**
     User, user.c
     Purpose: This file contains all the user functions. They implement
-    DUNGEON, a turn based roguelike in the style of the first Zelda games,
+    DUNGEON, a turn based adventure in the style of the first Zelda game,
     on the 150 x 96 screen.
 
-    Every game builds new floors of rooms at random. The hero walks from
-    room to room (the screen scrolls as in Zelda), fights slimes, bats,
-    skeletons, wizards and knights, collects keys, gold and hearts, opens
-    chests and, behind a locked door, finds the dragon that guards the
-    stairs to the next floor. Each floor is bigger and harder than the last.
+    The hero explores an overworld of 8 x 6 screens (world/world.txt): woods,
+    mountains, a lake, a desert, a graveyard. Hidden in it are caves with
+    gifts and four dungeons. The dungeons are built at random for every
+    game: rooms behind doors (the screen scrolls as in Zelda), enemies, keys,
+    chests and, behind a locked door, a dragon on every floor. The last
+    dragon of each dungeon guards a crystal. With the four crystals the
+    castle gate opens, and in the castle waits the red dragon.
 
     Controls (it is turn based, so there is no hurry):
       knob  turns the hero (left, up, right, down along its travel)
@@ -39,6 +41,7 @@
 
 #include "user.h"            /* variables/params used by user.c */
 #include "system.h"          /* System funct/params, like osc/peripheral conf*/
+#include "world.h"           /* the overworld, made by world/make_world.py */
 
 /******************************************************************************/
 /* Video memory                                                               */
@@ -206,6 +209,96 @@ static const char open_chest_art[TH][TW] = {
     ".rrrrrrrr.",
 };
 
+// ---- overworld ------------------------------------------------------------
+static const char tree_art[TH][TW] = {
+    "...gggg...",
+    ".gggggggg.",
+    "gggkgggggg",
+    ".ggggggkg.",
+    "...gggg...",
+    "....yy....",
+};
+static const char rock_art[TH][TW] = {
+    "AAAkAAAAkA",
+    "ABAAABAAAB",
+    "kAAAAkAABA",
+    "AAABAAAkAA",
+    "AkAAABAAAA",
+    "BAAAAAABAk",
+};
+static const char sand_art[TH][TW] = {
+    "ykkkkkkkkk",
+    "kkkkkykkkk",
+    "kkkkkkkkky",
+    "kkykkkkkkk",
+    "kkkkkkykkk",
+    "kkkkkkkkkk",
+};
+static const char flower_art[TH][TW] = {
+    "Ckkkkkkkkk",
+    "kkrkkkkkkk",
+    "krwrkkkmkk",
+    "kkrkkkmwmk",
+    "kkkkkkkmkk",
+    "kkkkkkkkkk",
+};
+static const char bush_art[TH][TW] = {
+    "..........",
+    "...gggg...",
+    "..gggkgg..",
+    ".ggkggggg.",
+    ".gggggkgg.",
+    "..gggggg..",
+};
+static const char bridge_art[TH][TW] = {
+    "yyyyyyyyyy",
+    "kkkkkkkkkk",
+    "yyyyyyyyyy",
+    "yyyyyyyyyy",
+    "kkkkkkkkkk",
+    "yyyyyyyyyy",
+};
+static const char grave_art[TH][TW] = {
+    "...wwww...",
+    "..wwkkww..",
+    "..wkkkkw..",
+    "..wwkkww..",
+    "..wwwwww..",
+    ".kkkkkkkk.",
+};
+static const char sign_art[TH][TW] = {
+    ".yyyyyyyy.",
+    ".ykkkkkky.",
+    ".yyyyyyyy.",
+    "....yy....",
+    "....yy....",
+    "..........",
+};
+static const char entrance_art[TH][TW] = {
+    "AAAkkkkAAA",
+    "AAkkkkkkAA",
+    "AkkkkkkkkA",
+    "AkkkkkkkkA",
+    "kkkkkkkkkk",
+    "kkkkkkkkkk",
+};
+static const char boulder_art[TH][TW] = {
+    "...AAAA...",
+    ".AAAAAABA.",
+    "AAkAAAAABA",
+    "AAAAABAAAB",
+    ".BAAAAABB.",
+    "..BBBBBB..",
+};
+static const char fountain_art[TH][TW] = {
+    "bbbccccbbb",
+    "bbcwwwwcbb",
+    "bcwmmmmwcb",
+    "bcwmmmmwcb",
+    "bbcwwwwcbb",
+    "bbbccccbbb",
+};
+
 // ---- items lying on the floor ---------------------------------------------
 static const char heart_art[TH][TW] = {
     "..........",
@@ -264,12 +357,31 @@ static const char sword_item_art[TH][TW] = {
     "..........",
 };
 
-enum items {
-    I_NONE, I_HEART, I_RUPEE, I_RUPEE5, I_KEY, I_CONTAINER, I_FAIRY, I_SWORD
+static const char crystal_art[TH][TW] = {
+    "....cc....",
+    "...cwcc...",
+    "..cwcccc..",
+    "..cccccc..",
+    "...cccc...",
+    "....cc....",
 };
-static const char *const item_art[8] = {
+static const char crown_art[TH][TW] = {
+    "y...yy...y",
+    "yy.yyyy.yy",
+    "yyyyyyyyyy",
+    "yrryyyyrry",
+    "yyyyyyyyyy",
+    "..........",
+};
+
+enum items {
+    I_NONE, I_HEART, I_RUPEE, I_RUPEE5, I_KEY, I_CONTAINER, I_FAIRY, I_SWORD,
+    I_CRYSTAL, I_CROWN
+};
+static const char *const item_art[10] = {
     0, ART(heart_art), ART(rupee_art), ART(rupee5_art), ART(key_art),
     ART(container_art), ART(fairy_art), ART(sword_item_art),
+    ART(crystal_art), ART(crown_art),
 };
 
 // ---- hero -----------------------------------------------------------------
@@ -360,6 +472,45 @@ static const char knight_art[TH][TW] = {   // facing left
     "wwrrrrrrcc",
     "..rrrrrrcc",
     "..rr..rr..",
+};
+static const char octorok_art[2][TH][TW] = {{
+    "..rrrrrr..",
+    ".rrrrrrrr.",
+    ".rwkrrkwr.",
+    ".rrrrrrrr.",
+    "r.r.rr.r.r",
+    "..........",
+}, {
+    "..rrrrrr..",
+    ".rrrrrrrr.",
+    ".rwkrrkwr.",
+    ".rrrrrrrr.",
+    ".r.r..r.r.",
+    "r........r",
+}};
+static const char ghost_art[TH][TW] = {
+    "...wwww...",
+    "..wwwwww..",
+    "..wkwwkw..",
+    "..wwwwww..",
+    "..wwwwww..",
+    "..w.ww.w..",
+};
+static const char oldman_art[TH][TW] = {
+    "...rrrr...",
+    "..ryyyyr..",
+    "..wwwwww..",
+    ".rrwwwwrr.",
+    ".rrrwwrrr.",
+    "..rrrrrr..",
+};
+static const char rock_shot_art[TH][TW] = {
+    "..........",
+    "...yyyy...",
+    "..yyrryy..",
+    "..yrryyy..",
+    "...yyyy...",
+    "..........",
 };
 static const char fire_art[2][TH][TW] = {{
     "...r..r...",
@@ -504,6 +655,20 @@ static const char sword_icon[5][8] = {
     ".yyy....",
     "..y.....",
 };
+
+static const char crystal_icon[2][5][5] = {{
+    "..c..",
+    ".cwc.",
+    "cwccc",
+    ".ccc.",
+    "..c..",
+}, {
+    "..b..",
+    ".b.b.",
+    "b...b",
+    ".b.b.",
+    "..b..",
+}};
 
 /******************************************************************************/
 /* Room layouts                                                               */
@@ -669,7 +834,7 @@ static const uint8_t font[][5] = {
     {2, 5, 7, 5, 5}, {6, 5, 6, 5, 6}, {3, 4, 4, 4, 3}, {6, 5, 5, 5, 6},
     {7, 4, 6, 4, 7}, {7, 4, 6, 4, 4}, {3, 4, 5, 5, 3}, {5, 5, 7, 5, 5},
     {7, 2, 2, 2, 7}, {1, 1, 1, 5, 2}, {5, 5, 6, 5, 5}, {4, 4, 4, 4, 7},
-    {5, 7, 7, 5, 5}, {6, 5, 5, 5, 5}, {2, 5, 5, 5, 2}, {6, 5, 6, 4, 4},
+    {5, 7, 7, 5, 5}, {5, 7, 7, 7, 5}, {2, 5, 5, 5, 2}, {6, 5, 6, 4, 4},
     {2, 5, 5, 6, 3}, {6, 5, 6, 5, 5}, {3, 4, 2, 1, 6}, {7, 2, 2, 2, 2},
     {5, 5, 5, 5, 7}, {5, 5, 5, 5, 2}, {5, 5, 7, 7, 5}, {5, 5, 2, 5, 5},
     {5, 5, 2, 2, 2}, {7, 1, 2, 4, 7},                           // A - Z
@@ -690,15 +855,34 @@ static const uint8_t logo_font[][5] = {
 /******************************************************************************/
 enum terrain {
     T_FLOOR, T_WALL, T_BLOCK, T_WATER, T_DOOR, T_LOCKED, T_SHUT, T_STAIRS,
-    T_CHEST, T_OPEN
+    T_CHEST, T_OPEN, T_TREE, T_ROCK, T_SAND, T_FLOWER, T_BUSH, T_BRIDGE,
+    T_GRAVE, T_SIGN, T_ENTRANCE, T_FOUNTAIN, T_COUNT
+};
+#define TF_HERO     0x01            // the hero can step on it
+#define TF_ENEMY    0x02            // enemies can step on it
+#define TF_FIRE     0x04            // fire flies over it
+#define TF_OVER     0x08            // drawn over the floor
+static const uint8_t tflags[T_COUNT] = {
+    [T_FLOOR] = TF_HERO | TF_ENEMY | TF_FIRE,
+    [T_WATER] = TF_FIRE,
+    [T_DOOR] = TF_HERO,
+    [T_STAIRS] = TF_HERO | TF_FIRE,
+    [T_BLOCK] = TF_OVER,                    // boulders of the overworld
+    [T_CHEST] = TF_OVER, [T_OPEN] = TF_OVER, [T_TREE] = TF_OVER,
+    [T_SAND] = TF_HERO | TF_ENEMY | TF_FIRE,
+    [T_FLOWER] = TF_HERO | TF_ENEMY | TF_FIRE,
+    [T_BUSH] = TF_OVER,
+    [T_BRIDGE] = TF_HERO | TF_ENEMY | TF_FIRE,
+    [T_GRAVE] = TF_OVER, [T_SIGN] = TF_OVER,
+    [T_ENTRANCE] = TF_HERO, [T_FOUNTAIN] = TF_HERO,
 };
 
-// A map byte: terrain in bits 0-3, item in bits 4-6, bit 7 = tile must be
-// redrawn.
-#define TERRAIN(t)  ((t) & 0x0F)
-#define ITEM(t)     (((t) >> 4) & 7)
-#define DIRTY       0x80
-static uint8_t map[RH][RW];
+// A map word: terrain in bits 0-4, item in bits 5-8, bit 15 = the tile must
+// be redrawn.
+#define TERRAIN(t)  ((t) & 0x1F)
+#define ITEM(t)     (((t) >> 5) & 0x0F)
+#define DIRTY       0x8000
+static uint16_t map[RH][RW];
 static uint16_t reach[RH];          // tiles the hero can walk to (bit x)
 
 enum room_kinds { K_NORMAL, K_START, K_KEY, K_CHEST, K_BOSS, K_TREASURE };
@@ -729,11 +913,14 @@ struct view {
 #define F_MIRROR    0x01
 #define F_FLIP      0x02
 #define F_WHITE     0x04
+#define F_RED       0x08            // green drawn red (the last dragon)
 
 enum ent_types {
     E_NONE, E_HERO, E_SLIME, E_BAT, E_SKELETON, E_WIZARD, E_KNIGHT, E_FIRE,
-    E_DRAGON
+    E_DRAGON, E_OCTOROK, E_GHOST, E_ROCK, E_OLDMAN, E_FLAME, E_TYPES
 };
+#define IS_SHOT(t)  ((t) == E_FIRE || (t) == E_ROCK)
+#define IS_NPC(t)   ((t) == E_OLDMAN || (t) == E_FLAME)
 struct ent {
     uint8_t type;
     uint8_t x, y;                   // tile (top left for the dragon)
@@ -760,8 +947,8 @@ struct fx {
 static struct fx fxs[MAX_FX];
 
 enum game_states {
-    ST_TITLE, ST_INTRO, ST_PLAY, ST_ANIM, ST_SCROLL, ST_ITEM, ST_DESCEND,
-    ST_DYING, ST_OVER
+    ST_TITLE, ST_INTRO, ST_PLAY, ST_ANIM, ST_SCROLL, ST_ITEM, ST_WIPE,
+    ST_DYING, ST_OVER, ST_END
 };
 static enum game_states state;
 static uint16_t timer;              // frames left in the current state
@@ -773,10 +960,52 @@ static bool hud_dirty;
 static uint8_t scroll_dir, scroll_k;
 static uint8_t knob_dir;            // 0 - 3 along the knob travel
 
-static uint8_t max_hp, keys, sword, fairy, floor_no, best_floor;
+static uint8_t max_hp, keys, sword, fairy;
+static uint8_t level;               // difficulty of the dungeon floor
 static uint16_t gold;
-static bool sword_given;
 static uint16_t rng = 0xACE1;
+static uint16_t world_seed;         // the dungeons of this game
+
+enum modes { M_WORLD, M_DUNGEON, M_CAVE };
+static uint8_t mode;
+static uint8_t wsx, wsy;            // overworld screen
+static uint8_t world_seen[WORLD_SY];    // bit x: screen (x, y) visited
+static uint8_t ret_wsx, ret_wsy, ret_x, ret_y;  // back to the overworld
+static uint8_t start_wsx, start_wsy, start_x, start_y;
+static uint8_t dun, dfloor;         // dungeon 1 - 5 (5: castle), its floor
+static uint8_t crystals;            // bit n - 1: dungeon n cleared
+static uint8_t caves_looted;        // bit n: cave n emptied
+static uint8_t cave_no;
+static uint8_t edge_dir = 255;      // the hero walks off the screen
+static bool holding;                // the hero holds an item up
+static bool wait_release;           // S1 must be released first
+
+enum wipes { W_FLOOR, W_DUNGEON, W_CAVE, W_WORLD, W_ENDING };
+static uint8_t wipe_to;
+enum after { AB_NONE, AB_EXIT, AB_ENDING };
+static uint8_t after_banner;
+
+// Dungeons 1 - 4 and the castle (5): floors, difficulty, colours.
+static const uint8_t dungeon_floors[6] = {0, 1, 2, 2, 2, 2};
+static const uint8_t dungeon_level[6] = {0, 1, 2, 3, 4, 5};
+static const uint8_t dungeon_theme[6][3] = {
+    {BLUE, CYAN, BLUE}, {GREEN, YELLOW, GREEN}, {YELLOW, RED, YELLOW},
+    {BLUE, CYAN, BLUE}, {MAGENTA, BLUE, MAGENTA}, {RED, MAGENTA, RED},
+};
+static const uint8_t world_theme[3] = {YELLOW, RED, GREEN};
+
+// Caves a - d.
+struct cave {
+    uint8_t item;
+    uint8_t need_hp;                // hearts needed, in half hearts
+    const char *text;
+};
+static const struct cave caves[4] = {
+    {I_CONTAINER, 0, "A GIFT FOR YOU"},
+    {I_FAIRY, 0, "A FAIRY FRIEND"},
+    {I_RUPEE5, 0, "IT'S A SECRET!"},
+    {I_SWORD, 10, "A SWORD FOR A HERO"},
+};
 
 static uint8_t idle_buttons;        // button levels at reset (not pressed)
 static uint8_t buttons, last_buttons;
@@ -928,7 +1157,7 @@ static void blit(const char *art, uint8_t w, uint8_t h, int16_t x, int16_t y,
 {
     int16_t i0, i1, j0, j1, i, j;
     int8_t step = (flags & F_MIRROR) ? -1 : 1;
-    bool white = flags & F_WHITE;
+    bool white = flags & F_WHITE, red = flags & F_RED;
 
     if (x >= clip_x1 || y >= clip_y1 || x + w <= clip_x0 || y + h <= clip_y0) {
         return;                                 // nothing to draw
@@ -952,6 +1181,8 @@ static void blit(const char *art, uint8_t w, uint8_t h, int16_t x, int16_t y,
                     c = WHITE + 1;
                 } else if (c > 8) {
                     c = theme[c - 9] + 1;
+                } else if (red && c == GREEN + 1) {
+                    c = RED + 1;
                 }
                 *dst = c - 1;
             }
@@ -1037,7 +1268,7 @@ static const char *terrain_art(uint8_t t, uint8_t ty)
 
     switch (t) {
     case T_WALL:    return ART(wall_art);
-    case T_BLOCK:   return ART(block_art);
+    case T_BLOCK:   return mode == M_WORLD ? ART(boulder_art) : ART(block_art);
     case T_WATER:   return ART(water_art);
     case T_DOOR:    return ns ? ART(door_ns_art) : ART(door_we_art);
     case T_LOCKED:  return ns ? ART(locked_ns_art) : ART(locked_we_art);
@@ -1045,6 +1276,16 @@ static const char *terrain_art(uint8_t t, uint8_t ty)
     case T_STAIRS:  return ART(stairs_art);
     case T_CHEST:   return ART(chest_art);
     case T_OPEN:    return ART(open_chest_art);
+    case T_TREE:    return ART(tree_art);
+    case T_ROCK:    return ART(rock_art);
+    case T_SAND:    return ART(sand_art);
+    case T_FLOWER:  return ART(flower_art);
+    case T_BUSH:    return ART(bush_art);
+    case T_BRIDGE:  return ART(bridge_art);
+    case T_GRAVE:   return ART(grave_art);
+    case T_SIGN:    return ART(sign_art);
+    case T_ENTRANCE: return ART(entrance_art);
+    case T_FOUNTAIN: return ART(fountain_art);
     default:        return 0;
     }
 }
@@ -1054,10 +1295,10 @@ static const char *terrain_art(uint8_t t, uint8_t ty)
  */
 static void draw_bg(uint8_t tx, uint8_t ty, int16_t px, int16_t py)
 {
-    uint8_t t = map[ty][tx];
+    uint16_t t = map[ty][tx];
     const char *art = terrain_art(TERRAIN(t), ty);
 
-    if (TERRAIN(t) != T_WALL && TERRAIN(t) != T_WATER) {
+    if (TERRAIN(t) == T_FLOOR || (tflags[TERRAIN(t)] & TF_OVER)) {
         blit(ART(floor_art), TW, TH, px, py, 0);
     }
     if (art) {
@@ -1066,6 +1307,12 @@ static void draw_bg(uint8_t tx, uint8_t ty, int16_t px, int16_t py)
     if (ITEM(t)) {
         blit(item_art[ITEM(t)], TW, TH, px, py, 0);
     }
+}
+
+// The dragon breathes fire every third turn, the red one every other turn.
+static uint8_t dragon_period(void)
+{
+    return dun == 5 ? 2 : 3;
 }
 
 /**
@@ -1098,7 +1345,7 @@ static void ent_view(const struct ent *e, struct view *v)
     }
     switch (e->type) {
     case E_HERO:
-        if (state == ST_ITEM) {
+        if (holding) {
             v->art = ART(hero_hold_art);
         } else if (e->dir == N) {
             v->art = ART(hero_up_art);
@@ -1124,12 +1371,23 @@ static void ent_view(const struct ent *e, struct view *v)
         if (e->dir == E) v->flags |= F_MIRROR;
         break;
     case E_FIRE:     v->art = ART(fire_art[(frame >> 2) & 1]); break;
-    case E_DRAGON:
-        v->art = ART(dragon_art[e->timer % 3 == 2]);    // fire is coming
+    case E_DRAGON:                              // mouth open: fire next
+        v->art = ART(dragon_art[(e->timer + 1) % dragon_period() == 0]);
         v->w = DW;
         v->h = DH;
         if (e->dir == E) v->flags |= F_MIRROR;
+        if (dun == 5) v->flags |= F_RED;
         break;
+    case E_OCTOROK:
+        v->art = ART(octorok_art[f]);
+        break;
+    case E_GHOST:
+        v->art = ART(ghost_art);
+        if ((frame >> 3) & 1) v->y--;           // floats
+        break;
+    case E_ROCK:     v->art = ART(rock_shot_art); break;
+    case E_OLDMAN:   v->art = ART(oldman_art); break;
+    case E_FLAME:    v->art = ART(fire_art[(frame >> 2) & 1]); break;
     }
 }
 
@@ -1284,28 +1542,53 @@ static void fx_at_tile(const char *art, uint8_t tx, uint8_t ty, uint8_t t)
 
 static void draw_hud(void)
 {
-    char text[8];
+    char text[10];
     uint8_t r, i, c;
 
     clip_screen();
     fill_rect(0, 0, PIX_W, ROOM_Y, BLACK);
-    // map of the floor: the rooms already seen
-    for (r = 0; r < ROOMS; r++) {
-        if (!(rooms[r].flags & R_SEEN)) {
-            continue;
+    if (mode == M_WORLD) {
+        // map of the overworld: the screens already seen, and the crystals
+        for (r = 0; r < WORLD_SY * WORLD_SX; r++) {
+            uint8_t x = r % WORLD_SX, y = r / WORLD_SX;
+            if (x == wsx && y == wsy) {
+                c = WHITE;
+            } else if (world_seen[y] & (1 << x)) {
+                c = BLUE;
+            } else {
+                continue;
+            }
+            fill_rect(2 + x * 3, 2 + y * 2, 3, 2, c);
         }
-        c = (r == cur) ? WHITE : (rooms[r].kind == K_BOSS) ? RED : BLUE;
-        fill_rect(2 + (r % MAP_W) * 5, 1 + (r / MAP_W) * 3, 4, 2, c);
+        draw_text(32, 2, "WORLD", WHITE, 2, 1);
+        for (i = 0; i < 4; i++) {
+            blit(ART(crystal_icon[(crystals >> i) & 1 ? 0 : 1]), 5, 5,
+                 74 + 6 * i, 2, 0);
+        }
+    } else if (mode == M_DUNGEON) {
+        // map of the floor: the rooms already seen
+        for (r = 0; r < ROOMS; r++) {
+            if (!(rooms[r].flags & R_SEEN)) {
+                continue;
+            }
+            c = (r == cur) ? WHITE : (rooms[r].kind == K_BOSS) ? RED : BLUE;
+            fill_rect(2 + (r % MAP_W) * 5, 1 + (r / MAP_W) * 3, 4, 2, c);
+        }
+        strcpy(text, dun == 5 ? "CASTLE" : "LEVEL ");
+        if (dun < 5) {
+            text[6] = '0' + dun;
+            text[7] = '\0';
+        }
+        if (dungeon_floors[dun] > 1) {
+            i = strlen(text);
+            text[i] = '-';
+            text[i + 1] = '0' + dfloor;
+            text[i + 2] = '\0';
+        }
+        draw_text(32, 2, text, WHITE, 2, 1);
+    } else {
+        draw_text(32, 2, "CAVE", WHITE, 2, 1);
     }
-    // floor number and hearts
-    strcpy(text, "FLOOR ");
-    text[6] = '0' + floor_no % 10;
-    text[7] = '\0';
-    if (floor_no >= 10) {
-        text[5] = '0' + floor_no / 10;
-        text[6] = '0' + floor_no % 10;
-    }
-    draw_text(32, 2, text, WHITE, 2, 1);
     for (i = 0; i < max_hp / 2; i++) {
         uint8_t k = hero.hp >= 2 * i + 2 ? 0 : hero.hp == 2 * i + 1 ? 1 : 2;
         blit(ART(heart_icon[k]), 7, 5, 32 + 8 * i, 10, 0);
@@ -1408,7 +1691,7 @@ static uint8_t random_room(uint8_t kind)
  */
 static void generate_floor(void)
 {
-    uint8_t want = 6 + 2 * floor_no, count = 1, r, d, nb, i, locks = 0;
+    uint8_t want = 6 + 2 * level, count = 1, r, d, nb, i, locks = 0;
     uint8_t dist[ROOMS], boss = 255, treasure = 255;
     uint16_t tries;
     bool changed;
@@ -1504,10 +1787,7 @@ static void generate_floor(void)
     r = random_room(K_NORMAL);
     if (r != 255) {
         rooms[r].kind = K_CHEST;
-        if (!sword_given && floor_no >= 2) {
-            rooms[r].item = I_SWORD;
-            sword_given = true;
-        } else if (!fairy && rnd_n(3) == 0) {
+        if (!fairy && rnd_n(3) == 0) {
             rooms[r].item = I_FAIRY;
         } else {
             rooms[r].item = I_RUPEE5;
@@ -1533,12 +1813,12 @@ static void generate_floor(void)
 
 static void set_terrain(uint8_t x, uint8_t y, uint8_t t)
 {
-    map[y][x] = (map[y][x] & 0xF0) | t | DIRTY;
+    map[y][x] = (map[y][x] & ~0x1Fu) | t | DIRTY;
 }
 
 static void set_item(uint8_t x, uint8_t y, uint8_t it)
 {
-    map[y][x] = (map[y][x] & 0x8F) | (it << 4) | DIRTY;
+    map[y][x] = (map[y][x] & ~0x1E0u) | ((uint16_t)it << 5) | DIRTY;
 }
 
 /**
@@ -1569,6 +1849,9 @@ static void build_room(uint8_t r)
     switch (rm->kind) {
     case K_START:
         set_terrain(CX, CY + 3, T_FLOOR);
+        if (dfloor == 1) {                      // the way out
+            set_terrain(door_x[S], door_y[S], T_DOOR);
+        }
         break;
     case K_CHEST:
     case K_TREASURE:
@@ -1590,20 +1873,17 @@ static void build_room(uint8_t r)
     }
 }
 
-static bool hero_floor(uint8_t x, uint8_t y)
+static uint8_t flags_at(uint8_t x, uint8_t y)
 {
-    uint8_t t = TERRAIN(map[y][x]);
-
-    return t == T_FLOOR || t == T_STAIRS;
+    return tflags[TERRAIN(map[y][x])];
 }
 
 /**
- * Finds the tiles the hero can reach from (ex, ey) and checks that every
- * door can be reached.
+ * Finds the tiles the hero can reach from (ex, ey).
  */
-static bool room_connected(uint8_t ex, uint8_t ey)
+static void find_reach(uint8_t ex, uint8_t ey)
 {
-    uint8_t x, y, d;
+    uint8_t x, y;
     bool grew;
 
     memset(reach, 0, sizeof(reach));
@@ -1612,7 +1892,9 @@ static bool room_connected(uint8_t ex, uint8_t ey)
         grew = false;
         for (y = 1; y < RH - 1; y++) {
             for (x = 1; x < RW - 1; x++) {
-                if ((reach[y] & (1u << x)) || !hero_floor(x, y)) continue;
+                if ((reach[y] & (1u << x)) || !(flags_at(x, y) & TF_HERO)) {
+                    continue;
+                }
                 if ((reach[y] & (1u << (x - 1))) || (reach[y] & (1u << (x + 1))) ||
                     (reach[y - 1] & (1u << x)) || (reach[y + 1] & (1u << x))) {
                     reach[y] |= 1u << x;
@@ -1621,6 +1903,16 @@ static bool room_connected(uint8_t ex, uint8_t ey)
             }
         }
     } while (grew);
+}
+
+/**
+ * Checks that every door of the dungeon room can be reached from (ex, ey).
+ */
+static bool room_connected(uint8_t ex, uint8_t ey)
+{
+    uint8_t d;
+
+    find_reach(ex, ey);
     for (d = 0; d < 4; d++) {
         if ((rooms[cur].doors & (1 << d)) &&
             !(reach[door_y[d] - dys[d]] & (1u << (door_x[d] - dxs[d])))) {
@@ -1634,8 +1926,90 @@ static bool room_connected(uint8_t ex, uint8_t ey)
  * Builds the current room around the hero; a layout that cuts the room in
  * two is replaced for good by the empty one.
  */
+static char world_char(uint8_t x, uint8_t y)
+{
+    return world[wsy * RH + y][wsx * RW + x];
+}
+
+static uint8_t world_terrain(char c)
+{
+    switch (c) {
+    case 'T': return T_TREE;
+    case '#': return T_ROCK;
+    case 'o': return T_BLOCK;
+    case '%': return T_WALL;
+    case '~': return T_WATER;
+    case '=': return T_BRIDGE;
+    case '*': return T_BUSH;
+    case '+': return T_GRAVE;
+    case '!': return T_SIGN;
+    case '@': return T_FOUNTAIN;
+    case ':': return T_SAND;
+    case ',': return T_FLOWER;
+    default:
+        if ((c >= '1' && c <= '5') || (c >= 'a' && c <= 'd')) {
+            return T_ENTRANCE;
+        }
+        return T_FLOOR;
+    }
+}
+
+/**
+ * Fills map with the current screen of the overworld.
+ */
+static void build_world(void)
+{
+    uint8_t x, y;
+
+    for (y = 0; y < RH; y++) {
+        for (x = 0; x < RW; x++) {
+            map[y][x] = world_terrain(world_char(x, y)) | DIRTY;
+        }
+    }
+}
+
+static bool cave_has_item(void)
+{
+    const struct cave *c = &caves[cave_no];
+
+    if (c->item == I_FAIRY) {
+        return !fairy;
+    }
+    return !(caves_looted & (1 << cave_no)) && max_hp >= c->need_hp;
+}
+
+/**
+ * Fills map with the current cave: an old man between two fires and,
+ * maybe, his gift.
+ */
+static void build_cave(void)
+{
+    uint8_t x, y;
+
+    for (y = 0; y < RH; y++) {
+        for (x = 0; x < RW; x++) {
+            map[y][x] = ((x == 0 || y == 0 || x == RW - 1 || y == RH - 1) ?
+                         T_WALL : T_FLOOR) | DIRTY;
+        }
+    }
+    set_terrain(door_x[S], door_y[S], T_DOOR);
+    if (cave_has_item()) {
+        set_item(CX, CY + 1, caves[cave_no].item);
+    }
+}
+
 static void prepare_room(void)
 {
+    if (mode == M_WORLD) {
+        build_world();
+        find_reach(hero.x, hero.y);
+        return;
+    }
+    if (mode == M_CAVE) {
+        build_cave();
+        find_reach(hero.x, hero.y);
+        return;
+    }
     build_room(cur);
     if (!room_connected(hero.x, hero.y)) {
         rooms[cur].layout = 0;
@@ -1699,8 +2073,8 @@ static uint8_t enemies_left(void)
     uint8_t i, n = 0;
 
     for (i = 1; i < MAX_ENTS; i++) {
-        if (ents[i].type != E_NONE && ents[i].type != E_FIRE &&
-            ents[i].hp > 0) {
+        uint8_t t = ents[i].type;
+        if (t != E_NONE && !IS_SHOT(t) && !IS_NPC(t) && ents[i].hp > 0) {
             n++;
         }
     }
@@ -1712,17 +2086,16 @@ static uint8_t enemies_left(void)
  */
 static bool can_enter(const struct ent *e, uint8_t idx, int8_t x, int8_t y)
 {
-    uint8_t s = ent_size(e), i, j, t;
+    uint8_t s = ent_size(e), i, j, f;
 
     for (j = 0; j < s; j++) {
         for (i = 0; i < s; i++) {
             int8_t tx = x + i, ty = y + j;
             if (tx < 1 || ty < 1 || tx > RW - 2 || ty > RH - 2) return false;
-            t = TERRAIN(map[ty][tx]);
             // Only fire crosses the water: an enemy the hero cannot reach
             // would keep the doors of a trap room closed for ever.
-            if (!(t == T_FLOOR || ((t == T_WATER || t == T_STAIRS) &&
-                                   e->type == E_FIRE))) {
+            f = flags_at(tx, ty);
+            if (!(f & (IS_SHOT(e->type) ? TF_FIRE : TF_ENEMY))) {
                 return false;
             }
             if (ent_at(tx, ty, idx) >= 0) return false;
@@ -1818,17 +2191,14 @@ static void melee(struct ent *e, uint8_t d, uint8_t dmg)
 
 static bool fire_can_pass(int8_t x, int8_t y)
 {
-    uint8_t t;
-
     if (x < 1 || y < 1 || x > RW - 2 || y > RH - 2) return false;
-    t = TERRAIN(map[y][x]);
-    return t == T_FLOOR || t == T_WATER || t == T_STAIRS;
+    return flags_at(x, y) & TF_FIRE;
 }
 
 /**
- * Throws a fireball that starts on (x, y) and flies towards d.
+ * Throws a fireball (or a rock) that starts on (x, y) and flies towards d.
  */
-static void shoot(int8_t x, int8_t y, uint8_t d)
+static void shoot(int8_t x, int8_t y, uint8_t d, uint8_t type)
 {
     struct ent *e;
 
@@ -1839,7 +2209,7 @@ static void shoot(int8_t x, int8_t y, uint8_t d)
     if (!fire_can_pass(x, y) || ent_at(x, y, 255) >= 0) {
         return;
     }
-    e = new_ent(E_FIRE, x, y);
+    e = new_ent(type, x, y);
     if (e) {
         e->hp = 1;
         e->dir = d;
@@ -1893,7 +2263,7 @@ static void drop_loot(const struct ent *e)
 /**
  * The hero hits what is on the tile in front.
  */
-static void hero_attack(struct ent *e)
+static void sword_fx(void)
 {
     uint8_t d = hero.dir;
     const char *art = (d == N || d == S) ? ART(sword_v_art) : ART(sword_h_art);
@@ -1901,7 +2271,14 @@ static void hero_attack(struct ent *e)
 
     spawn_fx(art, hero.x * TW + dxs[d] * 8, ROOM_Y + hero.y * TH + dys[d] * 5,
              flags, ANIM_N + 2);
-    if (e->type == E_FIRE) {
+}
+
+static void hero_attack(struct ent *e)
+{
+    uint8_t d = hero.dir;
+
+    sword_fx();
+    if (IS_SHOT(e->type)) {
         e->hp = 0;
         return;
     }
@@ -1939,6 +2316,11 @@ static void enemies_turn(void)
             if (d != 255 && (rnd() & 1)) melee(e, d, 1);
             else move_random(e);
             break;
+        case E_GHOST:                           // drifts towards you
+            if (d != 255 && (rnd() & 1)) melee(e, d, 1);
+            else if (rnd() & 1) move_toward_hero(e);
+            else move_random(e);
+            break;
         case E_SKELETON:
             if (d != 255) melee(e, d, 1);
             else if (rnd_n(10) < 7) move_toward_hero(e);
@@ -1949,17 +2331,20 @@ static void enemies_turn(void)
             else move_toward_hero(e);
             break;
         case E_WIZARD:                          // shoots when it sees you
+        case E_OCTOROK:
             if (e->timer) e->timer--;
             d = clear_shot(e);
             if (d != 255 && e->timer == 0) {
                 e->dir = d;
-                shoot(e->x + dxs[d], e->y + dys[d], d);
+                shoot(e->x + dxs[d], e->y + dys[d], d,
+                      e->type == E_WIZARD ? E_FIRE : E_ROCK);
                 e->timer = 3;
             } else if (rnd() & 1) {
                 move_random(e);
             }
             break;
         case E_FIRE:
+        case E_ROCK:
             if (e->timer) {                     // just thrown
                 e->timer = 0;
                 break;
@@ -1979,11 +2364,11 @@ static void enemies_turn(void)
         case E_DRAGON:                          // breathes fire every
             e->timer++;                         // third turn
             e->dir = (hero.x < e->x) ? W : E;
-            if (e->timer % 3 == 0) {
+            if (e->timer % dragon_period() == 0) {
                 int8_t mx = (e->dir == W) ? e->x - 1 : e->x + 2;
-                shoot(mx, e->y, e->dir);
-                shoot(mx, e->y + 1, e->dir);
-            } else if (e->timer % 3 == 1) {
+                shoot(mx, e->y, e->dir, E_FIRE);
+                shoot(mx, e->y + 1, e->dir, E_FIRE);
+            } else if (e->timer % 3 == 1 || dun == 5) {
                 if (hero.y < e->y) {
                     try_move(e, N);
                 } else if (hero.y > e->y + 1) {
@@ -2014,7 +2399,7 @@ static void place_enemy(uint8_t type, int8_t hp)
         dy = (int8_t)y - hero.y;
         if (dx < 0) dx = -dx;
         if (dy < 0) dy = -dy;
-        if (!(reach[y] & (1u << x)) || TERRAIN(map[y][x]) != T_FLOOR ||
+        if (!(reach[y] & (1u << x)) || !(flags_at(x, y) & TF_ENEMY) ||
             ITEM(map[y][x]) || dx + dy < 4 || ent_at(x, y, 255) >= 0) {
             continue;
         }
@@ -2034,12 +2419,12 @@ static void spawn_enemies(void)
     static const uint8_t costs[5] = {1, 1, 2, 3, 3};
     static const int8_t hps[5] = {1, 1, 2, 2, 4};
     uint8_t kind = rooms[cur].kind, budget, n = 0, tries, k, avail;
-    int8_t bonus = (floor_no - 1) / 3;          // tougher deeper down
+    int8_t bonus = (level - 1) / 3;             // tougher deeper down
 
     if (kind == K_BOSS) {
         struct ent *e = new_ent(E_DRAGON, hero.x > CX ? 2 : RW - 4, 5);
         if (e) {
-            e->hp = 4 + 2 * floor_no;
+            e->hp = 4 + 2 * level;
             e->dir = hero.x > CX ? E : W;
         }
         return;
@@ -2047,15 +2432,44 @@ static void spawn_enemies(void)
     if (kind == K_START || kind == K_TREASURE) {
         return;
     }
-    budget = 1 + floor_no + rnd_n(3);
-    if (budget > 10) budget = 10;
-    avail = floor_no >= 3 ? 5 : floor_no >= 2 ? 4 : 3;
+    budget = 2 + level / 2 + rnd_n(3);
+    avail = level >= 3 ? 5 : level >= 2 ? 4 : 3;
     for (tries = 0; budget && n < 6 && tries < 30; tries++) {
         k = rnd_n(avail);
         if (costs[k] > budget) continue;
         place_enemy(types[k], hps[k] + bonus);
         budget -= costs[k];
         n++;
+    }
+}
+
+/**
+ * Enemies of an overworld screen, by region and danger. They come back
+ * every time, as in Zelda.
+ */
+static void spawn_world_enemies(void)
+{
+    static const char regions[] = "GFMCHLDBPRS";
+    static const uint8_t kinds[11][3] = {
+        {E_GHOST, E_SKELETON, E_BAT}, {E_SLIME, E_BAT, E_OCTOROK},
+        {E_BAT, E_KNIGHT, E_SKELETON}, {E_BAT, E_KNIGHT, E_SKELETON},
+        {E_OCTOROK, E_SLIME, E_BAT}, {E_OCTOROK, E_BAT, E_SLIME},
+        {E_OCTOROK, E_KNIGHT, E_SLIME}, {E_OCTOROK, E_SLIME, E_BAT},
+        {E_SLIME, E_OCTOROK, E_BAT}, {E_SLIME, E_OCTOROK, E_BAT},
+        {E_SLIME, E_OCTOROK, E_BAT},
+    };
+    uint8_t danger = screen_danger[wsy][wsx] - '0', r = 0, budget, k, t;
+
+    if (danger == 0) {
+        return;
+    }
+    while (regions[r] && regions[r] != screen_region[wsy][wsx]) r++;
+    if (!regions[r]) r = 0;
+    budget = danger + rnd_n(3);
+    for (k = 0; k < budget && k < 5; k++) {
+        t = kinds[r][rnd_n(danger >= 2 ? 3 : 2)];
+        place_enemy(t, t == E_KNIGHT ? 4 : t == E_SKELETON ? 2 : 1);
+        if (t == E_KNIGHT) k++;                 // counts double
     }
 }
 
@@ -2079,6 +2493,21 @@ static void enter_room(void)
 
     for (i = 1; i < MAX_ENTS; i++) {
         ents[i].type = E_NONE;
+    }
+    hud_dirty = true;
+    if (mode == M_WORLD) {
+        world_seen[wsy] |= 1 << wsx;
+        spawn_world_enemies();
+        return;
+    }
+    if (mode == M_CAVE) {
+        struct ent *e = new_ent(E_OLDMAN, CX, CY - 2);
+        if (e) e->hp = 99;
+        e = new_ent(E_FLAME, CX - 3, CY - 2);
+        if (e) e->hp = 99;
+        e = new_ent(E_FLAME, CX + 3, CY - 2);
+        if (e) e->hp = 99;
+        return;
     }
     rooms[cur].flags |= R_SEEN;
     if (!(rooms[cur].flags & R_CLEAR)) {
@@ -2110,10 +2539,16 @@ static void dragon_defeated(const struct ent *e)
     uint8_t i;
 
     for (i = 1; i < MAX_ENTS; i++) {            // its fire goes out
-        if (ents[i].type == E_FIRE) ents[i].type = E_NONE;
+        if (IS_SHOT(ents[i].type)) ents[i].type = E_NONE;
     }
-    set_terrain(CX, CY, T_STAIRS);
-    set_item(CX, CY + 2, (max_hp < 16) ? I_CONTAINER : I_RUPEE5);
+    if (dfloor < dungeon_floors[dun]) {
+        set_terrain(CX, CY, T_STAIRS);          // down to the next floor
+        set_item(CX, CY + 2, (max_hp < 16) ? I_CONTAINER : I_RUPEE5);
+    } else if (max_hp < 16) {
+        set_item(CX, CY + 2, I_CONTAINER);      // then the crystal appears
+    } else {
+        set_item(CX, CY, dun == 5 ? I_CROWN : I_CRYSTAL);
+    }
     fx_at_tile(ART(puff_art), e->x + 1, e->y, 20);
     fx_at_tile(ART(puff_art), e->x, e->y + 1, 20);
 }
@@ -2122,17 +2557,21 @@ static void dragon_defeated(const struct ent *e)
 /* Game flow                                                                  */
 /******************************************************************************/
 
-static void set_theme(void)
+static void set_theme(const uint8_t *t)
 {
-    static const uint8_t themes[6][3] = {
-        {BLUE, CYAN, BLUE}, {GREEN, YELLOW, GREEN}, {RED, MAGENTA, RED},
-        {MAGENTA, BLUE, MAGENTA}, {YELLOW, RED, YELLOW}, {CYAN, BLUE, CYAN},
-    };
-    const uint8_t *t = themes[(floor_no - 1) % 6];
-
     theme[0] = t[0];
     theme[1] = t[1];
     theme[2] = t[2];
+}
+
+static uint8_t crystal_count(void)
+{
+    uint8_t i, n = 0;
+
+    for (i = 0; i < 4; i++) {
+        if (crystals & (1 << i)) n++;
+    }
+    return n;
 }
 
 static void title_screen(void)
@@ -2156,96 +2595,205 @@ static void title_screen(void)
 
 static void game_over_screen(void)
 {
-    char text[12];
+    char text[16];
 
     clip_screen();
     memset(pix, BLACK, sizeof(pix));
-    if (floor_no > best_floor) {
-        best_floor = floor_no;
-    }
     draw_text(-1, 14, "GAME OVER", RED, 4, 2);
-    strcpy(text, "FLOOR ");
-    number_text(text + 6, floor_no, 2);
-    draw_text(-1, 38, text, WHITE, 2, 1);
+    strcpy(text, "CRYSTALS 0 OF 4");
+    text[9] = '0' + crystal_count();
+    draw_text(-1, 40, text, CYAN, 2, 1);
     strcpy(text, "GOLD ");
     number_text(text + 5, gold, 3);
-    draw_text(-1, 48, text, YELLOW, 2, 1);
-    strcpy(text, "BEST ");
-    number_text(text + 5, best_floor, 2);
-    draw_text(-1, 62, text, CYAN, 2, 1);
+    draw_text(-1, 52, text, YELLOW, 2, 1);
     state = ST_OVER;
     timer = 0;
 }
 
-/**
- * Builds a new floor and shows its number for a moment.
- */
-static void start_floor(void)
+static void ending_screen(void)
 {
-    char text[9];
+    char text[10];
+
+    clip_screen();
+    memset(pix, BLACK, sizeof(pix));
+    draw_text(-1, 10, "THE END", YELLOW, 4, 2);
+    blit(ART(crown_art), TW, TH, 70, 30, 0);
+    blit(ART(hero_hold_art), TW, TH, 70, 36, 0);
+    draw_text(-1, 50, "THE LAND IS SAVED", WHITE, 2, 1);
+    strcpy(text, "GOLD ");
+    number_text(text + 5, gold, 3);
+    draw_text(-1, 62, text, YELLOW, 2, 1);
+    state = ST_END;
+    timer = 0;
+}
+
+/**
+ * Starts afresh on a new place: no enemies, no effects, the hero on (x, y).
+ */
+static void reset_entities(uint8_t x, uint8_t y, uint8_t dir)
+{
     int8_t hp = hero.hp;
 
-    set_theme();
-    generate_floor();
-    cur = START_ROOM;
     memset(ents, 0, sizeof(ents));
     memset(fxs, 0, sizeof(fxs));
     hero.type = E_HERO;
-    hero.x = hero.ox = CX;
-    hero.y = hero.oy = CY + 3;
-    hero.dir = N;
-    hero.hp = hp > 0 ? hp : max_hp;
+    hero.x = hero.ox = x;
+    hero.y = hero.oy = y;
+    hero.dir = dir;
+    hero.hp = hp;
     hero_hidden = false;
+    holding = false;
+    shield = false;
     anim_t = ANIM_N;
+    edge_dir = 255;
+}
+
+/**
+ * Builds a floor of the current dungeon and shows its name for a moment.
+ * A dungeon is built from the seed of the game, so it is the same every
+ * time the hero comes back to it.
+ */
+static void start_floor(void)
+{
+    char text[14];
+    uint16_t saved = rng;
+
+    mode = M_DUNGEON;
+    level = dungeon_level[dun] + dfloor - 1;
+    set_theme(dungeon_theme[dun]);
+    rng = world_seed ^ (dun * 0x3D1Bu) ^ (dfloor * 0x11C7u);
+    if (rng == 0) rng = 1;
+    generate_floor();
+    rng = saved;
+    cur = START_ROOM;
+    reset_entities(CX, CY + 3, N);
     prepare_room();
     rooms[cur].flags |= R_SEEN;
     draw_hud();
     fill_rect(0, ROOM_Y, PIX_W, ROOM_PH, BLACK);
-    strcpy(text, "FLOOR ");
-    number_text(text + 6, floor_no, 2);
-    if (text[6] == '0') {
-        text[6] = text[7];
+    if (dun == 5) {
+        strcpy(text, "CASTLE");
+    } else {
+        strcpy(text, "LEVEL ");
+        text[6] = '0' + dun;
         text[7] = '\0';
     }
-    draw_text(-1, ROOM_Y + 32, text, WHITE, 3, 2);
+    draw_text(-1, ROOM_Y + 26, text, WHITE, 3, 2);
+    if (dungeon_floors[dun] > 1) {
+        strcpy(text, "FLOOR 1 OF 2");
+        text[6] = '0' + dfloor;
+        text[11] = '0' + dungeon_floors[dun];
+        draw_text(-1, ROOM_Y + 46, text, CYAN, 2, 1);
+    }
     state = ST_INTRO;
     timer = 100;
 }
 
+/**
+ * Shows a message, and maybe an item over the hero's head, as in Zelda.
+ */
+static void show_banner(uint8_t it, const char *text)
+{
+    int16_t y = (hero.y > CY) ? ROOM_Y + 7 : PIX_H - 17;
+
+    state = ST_ITEM;
+    timer = 100;
+    holding = (it != I_NONE);
+    if (holding) {
+        spawn_fx(item_art[it], hero.x * TW, ROOM_Y + (hero.y - 1) * TH, 0,
+                 255);
+    }
+    render();
+    fill_rect(2, y, PIX_W - 4, 11, WHITE);
+    fill_rect(3, y + 1, PIX_W - 6, 9, BLACK);
+    draw_text(-1, y + 3, text, YELLOW, 2, 1);
+    led_timer = 40;
+    wait_release = true;
+}
+
+static void start_cave(void)
+{
+    static const uint8_t cave_theme[3] = {YELLOW, RED, RED};
+    const struct cave *c = &caves[cave_no];
+
+    mode = M_CAVE;
+    set_theme(cave_theme);
+    reset_entities(CX, RH - 2, N);
+    prepare_room();
+    enter_room();
+    draw_hud();
+    if (cave_has_item()) {
+        show_banner(I_NONE, c->text);
+    } else if (max_hp < c->need_hp) {
+        show_banner(I_NONE, "NEED 5 HEARTS");
+    } else {
+        show_banner(I_NONE, "GOOD LUCK!");
+    }
+}
+
+static void go_to_world(uint8_t sx, uint8_t sy, uint8_t x, uint8_t y,
+                        uint8_t dir)
+{
+    mode = M_WORLD;
+    wsx = sx;
+    wsy = sy;
+    set_theme(world_theme);
+    reset_entities(x, y, dir);
+    prepare_room();
+    enter_room();
+    draw_hud();
+    state = ST_PLAY;
+}
+
 static void new_game(void)
 {
+    uint8_t x, y;
+
     rng ^= frame ^ (pot << 5);
     if (rng == 0) rng = 0xACE1;
+    world_seed = rnd();
     max_hp = 6;
     hero.hp = 6;
     keys = 0;
     gold = 0;
     sword = 1;
     fairy = 0;
-    sword_given = false;
-    floor_no = 1;
-    start_floor();
+    crystals = 0;
+    caves_looted = 0;
+    after_banner = AB_NONE;
+    memset(world_seen, 0, sizeof(world_seen));
+    for (y = 0; y < WORLD_SY * RH; y++) {       // where the adventure starts
+        for (x = 0; x < WORLD_SX * RW; x++) {
+            if (world[y][x] == 's') {
+                start_wsx = x / RW;
+                start_wsy = y / RH;
+                start_x = x % RW;
+                start_y = y % RH;
+            }
+        }
+    }
+    go_to_world(start_wsx, start_wsy, start_x, start_y, N);
 }
 
 /**
- * Shows an item over the hero's head with a message, as in Zelda.
+ * After a game over: back with all the hearts, to the door of the dungeon
+ * or to the start.
  */
-static void item_banner(uint8_t it, const char *text)
+static void continue_game(void)
 {
-    int16_t y = (hero.y > CY) ? ROOM_Y + 7 : PIX_H - 17;
-
-    state = ST_ITEM;
-    timer = 100;
-    spawn_fx(item_art[it], hero.x * TW, ROOM_Y + (hero.y - 1) * TH, 0, 255);
-    render();
-    fill_rect(2, y, PIX_W - 4, 11, WHITE);
-    fill_rect(3, y + 1, PIX_W - 6, 9, BLACK);
-    draw_text(-1, y + 3, text, YELLOW, 2, 1);
-    led_timer = 40;
+    hero.hp = max_hp;
+    after_banner = AB_NONE;
+    if (mode == M_DUNGEON) {
+        go_to_world(ret_wsx, ret_wsy, ret_x, ret_y, S);
+    } else {
+        go_to_world(start_wsx, start_wsy, start_x, start_y, N);
+    }
 }
 
 static void give_item(uint8_t it, bool from_chest)
 {
+    static char text[16];
+
     switch (it) {
     case I_HEART:
         hero.hp += 2;
@@ -2256,30 +2804,56 @@ static void give_item(uint8_t it, bool from_chest)
         break;
     case I_RUPEE5:
         gold += from_chest ? 20 : 5;
-        if (from_chest) item_banner(it, "20 GOLD!");
+        if (from_chest) show_banner(it, "20 GOLD!");
         break;
     case I_KEY:
         keys++;
-        rooms[cur].flags |= R_LOOTED;
-        if (from_chest) item_banner(it, "A KEY!");
+        if (mode == M_DUNGEON) rooms[cur].flags |= R_LOOTED;
+        if (from_chest) show_banner(it, "A KEY!");
         break;
     case I_CONTAINER:
         if (max_hp < 16) max_hp += 2;
         hero.hp = max_hp;
-        rooms[cur].flags |= R_LOOTED;
-        item_banner(it, "HEART CONTAINER!");
+        if (mode == M_DUNGEON) {
+            rooms[cur].flags |= R_LOOTED;
+            if (rooms[cur].kind == K_BOSS && dfloor == dungeon_floors[dun]) {
+                set_item(CX, CY, dun == 5 ? I_CROWN : I_CRYSTAL);
+            }
+        }
+        show_banner(it, "HEART CONTAINER!");
         break;
     case I_FAIRY:
         fairy = 1;
-        item_banner(it, "FAIRY IN A BOTTLE");
+        show_banner(it, "FAIRY IN A BOTTLE");
         break;
     case I_SWORD:
         sword = 2;
-        item_banner(it, "MAGIC SWORD!");
+        show_banner(it, "MAGIC SWORD!");
+        break;
+    case I_CRYSTAL:
+        crystals |= 1 << (dun - 1);
+        strcpy(text, "CRYSTAL 0 OF 4!");
+        text[8] = '0' + crystal_count();
+        show_banner(it, text);
+        after_banner = AB_EXIT;
+        break;
+    case I_CROWN:
+        show_banner(it, "THE CROWN!");
+        after_banner = AB_ENDING;
         break;
     }
     if (gold > 999) gold = 999;
     hud_dirty = true;
+}
+
+static const char *sign_text(void)
+{
+    uint8_t i, screen = wsy * WORLD_SX + wsx;
+
+    for (i = 0; i < SIGNS; i++) {
+        if (signs[i].screen == screen) return signs[i].text;
+    }
+    return "...";
 }
 
 /**
@@ -2299,15 +2873,29 @@ static bool hero_act(bool walk)
         return true;
     }
     if (x < 0 || y < 0 || x >= RW || y >= RH) {
-        return false;
+        // walking off a screen of the overworld onto the next one
+        int8_t sx = wsx + dxs[d], sy = wsy + dys[d];
+        uint8_t nx = (x + RW) % RW, ny = (y + RH) % RH, nt;
+        if (mode != M_WORLD || sx < 0 || sy < 0 || sx >= WORLD_SX ||
+            sy >= WORLD_SY) {
+            return false;
+        }
+        nt = world_terrain(world[sy * RH + ny][sx * RW + nx]);
+        if (!(tflags[nt] & TF_HERO) || nt == T_ENTRANCE) {
+            return false;
+        }
+        edge_dir = d;
+        return true;
     }
     k = ent_at(x, y, 0);
     if (k > 0) {
+        if (IS_NPC(ents[k].type)) return false;
         hero_attack(&ents[k]);
         return true;
     }
     t = TERRAIN(map[y][x]);
-    if (t == T_LOCKED) {
+    switch (t) {
+    case T_LOCKED:
         if (keys == 0) return false;
         keys--;
         rooms[cur].locks &= ~(1 << d);
@@ -2316,14 +2904,36 @@ static bool hero_act(bool walk)
         fx_at_tile(ART(puff_art), x, y, 12);
         hud_dirty = true;
         return true;
-    }
-    if (t == T_CHEST) {
+    case T_CHEST:
         set_terrain(x, y, T_OPEN);
         rooms[cur].flags |= R_LOOTED;
         give_item(rooms[cur].item, true);
         return false;                           // the banner pauses the game
+    case T_BUSH:                                // the sword cuts it
+        sword_fx();
+        set_terrain(x, y, T_FLOOR);
+        fx_at_tile(ART(puff_art), x, y, 10);
+        if (rnd_n(5) == 0) {
+            set_item(x, y, hero.hp < max_hp ? I_HEART : I_RUPEE);
+        }
+        return true;
+    case T_SIGN:
+        show_banner(I_NONE, sign_text());
+        return false;
+    case T_ENTRANCE: {
+        char c = world_char(x, y);
+        if (c == '5' && crystals != 0x0F) {
+            show_banner(I_NONE, "THE GATE IS SEALED");
+            return false;
+        }
+        if (c >= '1' && c <= '4' && (crystals & (1 << (c - '1')))) {
+            show_banner(I_NONE, "ALREADY CLEARED");
+            return false;
+        }
+        break;
     }
-    if (!(t == T_FLOOR || t == T_STAIRS || t == T_DOOR)) {
+    }
+    if (!(tflags[t] & TF_HERO)) {
         return false;
     }
     hero.x = x;
@@ -2343,14 +2953,28 @@ static void start_scroll(uint8_t d)
     }
     hero_hidden = true;
     render();                                   // the room without sprites
-    cur = neighbour(cur, d);
-    hero.x = hero.ox = door_x[OPP(d)] + dxs[d];
-    hero.y = hero.oy = door_y[OPP(d)] + dys[d];
+    if (mode == M_WORLD) {
+        wsx += dxs[d];
+        wsy += dys[d];
+        hero.x = hero.ox = (hero.x + dxs[d] + RW) % RW;
+        hero.y = hero.oy = (hero.y + dys[d] + RH) % RH;
+    } else {
+        cur = neighbour(cur, d);
+        hero.x = hero.ox = door_x[OPP(d)] + dxs[d];
+        hero.y = hero.oy = door_y[OPP(d)] + dys[d];
+    }
     hero.dir = d;
     prepare_room();
     scroll_dir = d;
     scroll_k = 0;
     state = ST_SCROLL;
+}
+
+static void start_wipe(uint8_t to)
+{
+    wipe_to = to;
+    state = ST_WIPE;
+    timer = 0;
 }
 
 /**
@@ -2430,13 +3054,14 @@ static void scroll_update(void)
 static void end_turn(void)
 {
     uint8_t i, t, it;
+    uint16_t m;
 
     for (i = 0; i < MAX_ENTS; i++) {
         ents[i].ox = ents[i].x;
         ents[i].oy = ents[i].y;
         ents[i].lunge = 0;
         ents[i].stun = 0;
-        if (ents[i].type == E_FIRE) {
+        if (IS_SHOT(ents[i].type)) {
             ents[i].timer = 0;                  // thrown fire moves next turn
         }
     }
@@ -2444,7 +3069,7 @@ static void end_turn(void)
     for (i = 1; i < MAX_ENTS; i++) {
         struct ent *e = &ents[i];
         if (e->type == E_NONE || e->hp > 0) continue;
-        if (e->type != E_FIRE) {
+        if (!IS_SHOT(e->type)) {
             fx_at_tile(ART(puff_art), e->x, e->y, 12);
             if (e->type == E_DRAGON) {
                 dragon_defeated(e);
@@ -2455,14 +3080,15 @@ static void end_turn(void)
         e->type = E_NONE;
     }
     state = ST_PLAY;
-    if (!(rooms[cur].flags & R_CLEAR) && enemies_left() == 0) {
+    if (mode == M_DUNGEON && !(rooms[cur].flags & R_CLEAR) &&
+        enemies_left() == 0) {
         room_cleared();
     }
     if (hero.hp <= 0) {
         if (fairy) {
             fairy = 0;
             hero.hp = max_hp;
-            item_banner(I_FAIRY, "SAVED BY THE FAIRY");
+            show_banner(I_FAIRY, "SAVED BY THE FAIRY");
         } else {
             state = ST_DYING;
             timer = 90;
@@ -2470,30 +3096,61 @@ static void end_turn(void)
         hud_dirty = true;
         return;
     }
-    t = map[hero.y][hero.x];
-    it = ITEM(t);
+    m = map[hero.y][hero.x];
+    it = ITEM(m);
     if (it) {
         set_item(hero.x, hero.y, I_NONE);
-        give_item(it, false);
+        give_item(it, mode == M_CAVE);
+        if (mode == M_CAVE && it != I_FAIRY) {
+            caves_looted |= 1 << cave_no;
+        }
     }
     if (state != ST_PLAY) {
         return;
     }
-    switch (TERRAIN(t)) {
+    t = TERRAIN(m);
+    switch (t) {
     case T_DOOR:
-        start_scroll(hero.y == 0 ? N : hero.y == RH - 1 ? S :
-                     hero.x == 0 ? W : E);
+        if (mode == M_CAVE ||
+            (hero.y == RH - 1 && neighbour(cur, S) == 255)) {
+            start_wipe(W_WORLD);                // out of the dungeon
+        } else {
+            start_scroll(hero.y == 0 ? N : hero.y == RH - 1 ? S :
+                         hero.x == 0 ? W : E);
+        }
         break;
     case T_STAIRS:
-        state = ST_DESCEND;
-        timer = 0;
+        start_wipe(W_FLOOR);
+        break;
+    case T_ENTRANCE: {
+        char c = world_char(hero.x, hero.y);
+        ret_wsx = wsx;                          // come back below it
+        ret_wsy = wsy;
+        ret_x = hero.x;
+        ret_y = hero.y + 1;
+        if (c >= '1' && c <= '5') {
+            dun = c - '0';
+            start_wipe(W_DUNGEON);
+        } else {
+            cave_no = c - 'a';
+            start_wipe(W_CAVE);
+        }
+        break;
+    }
+    case T_FOUNTAIN:                            // the fairies heal you
+        if (hero.hp < max_hp) {
+            hero.hp = max_hp;
+            fx_at_tile(ART(fairy_art), hero.x, hero.y - 1, 40);
+            led_timer = 40;
+            hud_dirty = true;
+        }
         break;
     }
 }
 
 static void start_turn(bool walk)
 {
-    uint8_t i;
+    uint8_t i, t;
 
     for (i = 0; i < MAX_ENTS; i++) {
         ents[i].ox = ents[i].x;
@@ -2502,7 +3159,14 @@ static void start_turn(bool walk)
     if (!hero_act(walk)) {
         return;
     }
-    if (TERRAIN(map[hero.y][hero.x]) != T_DOOR) {
+    if (edge_dir != 255) {                      // on to the next screen
+        uint8_t d = edge_dir;
+        edge_dir = 255;
+        start_scroll(d);
+        return;
+    }
+    t = TERRAIN(map[hero.y][hero.x]);
+    if (t != T_DOOR && t != T_ENTRANCE) {
         enemies_turn();
     }
     anim_t = 0;
@@ -2515,6 +3179,10 @@ static void play_update(void)
 
     knob_dir = knob_select(4, knob_dir);
     hero.dir = knob_dirs[knob_dir];
+    if (wait_release) {                         // after a message
+        if (!(buttons & BTN_S1)) wait_release = false;
+        return;
+    }
     if (buttons & BTN_S1) {
         start_turn(true);
     } else if (pressed(BTN_S2)) {
@@ -2569,6 +3237,18 @@ void InitApp(void)
 }
 
 /**
+ * Text that blinks at the bottom of the title and end screens.
+ */
+static void blink_text(int16_t y, const char *text)
+{
+    timer++;
+    fill_rect(0, y, PIX_W, 5, BLACK);
+    if (timer > 60 && (timer & 32)) {
+        draw_text(-1, y, text, WHITE, 2, 1);
+    }
+}
+
+/**
  * This function has all the user logic. It is called in an endless loop and
  * runs one 60 Hz frame per call.
  */
@@ -2580,31 +3260,24 @@ void MainApp(void)
 
     switch (state) {
     case ST_TITLE:
-        timer++;
-        fill_rect(0, 46, PIX_W, 5, BLACK);
-        if (timer & 32) {
-            draw_text(-1, 46, "PRESS S1", WHITE, 2, 1);
-        }
-        if (pressed(BTN_S1)) {
-            new_game();
-        }
-        return;
+        blink_text(46, "PRESS S1");
+        if (!pressed(BTN_S1)) return;
+        new_game();
+        break;
     case ST_OVER:
-        timer++;
-        fill_rect(0, 78, PIX_W, 5, BLACK);
-        if (timer > 60 && (timer & 32)) {
-            draw_text(-1, 78, "PRESS S1", WHITE, 2, 1);
-        }
-        if (timer > 60 && pressed(BTN_S1)) {
-            title_screen();
-        }
+        blink_text(76, "S1: CONTINUE");
+        if (timer <= 60 || !pressed(BTN_S1)) return;
+        continue_game();
+        break;
+    case ST_END:
+        blink_text(80, "PRESS S1");
+        if (timer > 60 && pressed(BTN_S1)) title_screen();
         return;
     case ST_INTRO:
-        if (--timer == 0) {
-            redraw_room();
-            enter_room();
-            state = ST_PLAY;
-        }
+        if (--timer) return;
+        redraw_room();
+        enter_room();
+        state = ST_PLAY;
         break;
     case ST_SCROLL:
         scroll_update();
@@ -2620,25 +3293,48 @@ void MainApp(void)
         }
         break;
     case ST_ITEM:
-        if (--timer == 0) {
+        if (--timer) {
+            tick();
+            return;                             // the game waits
+        }
+        {
             uint8_t i;
             for (i = 0; i < MAX_FX; i++) {
                 if (fxs[i].t == 255) fxs[i].t = 0;
             }
-            redraw_room();                      // removes the banner
-            state = ST_PLAY;
-        } else {
-            tick();
-            return;                             // the game waits
+        }
+        holding = false;
+        redraw_room();                          // removes the banner
+        state = ST_PLAY;
+        if (after_banner != AB_NONE) {
+            start_wipe(after_banner == AB_EXIT ? W_WORLD : W_ENDING);
+            after_banner = AB_NONE;
+            return;
         }
         break;
-    case ST_DESCEND:                            // the room fades to black
+    case ST_WIPE:                               // the room fades to black
         fill_rect(0, ROOM_Y + timer * 3, PIX_W, 3, BLACK);
-        if (++timer == ROOM_PH / 3) {
-            floor_no++;
+        if (++timer < ROOM_PH / 3) return;
+        switch (wipe_to) {
+        case W_FLOOR:
+            dfloor++;
             start_floor();
+            return;
+        case W_DUNGEON:
+            dfloor = 1;
+            start_floor();
+            return;
+        case W_CAVE:
+            start_cave();
+            return;
+        case W_ENDING:
+            ending_screen();
+            return;
+        default:
+            go_to_world(ret_wsx, ret_wsy, ret_x, ret_y, S);
+            break;
         }
-        return;
+        break;
     case ST_DYING:                              // the hero spins and falls
         hero.dir = (timer >> 3) & 3;
         hero.flash = 0;
@@ -2648,9 +3344,6 @@ void MainApp(void)
             return;
         }
         break;
-    }
-    if (state == ST_INTRO) {
-        return;
     }
     tick();
     render();
